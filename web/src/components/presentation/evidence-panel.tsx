@@ -1,8 +1,10 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import type { Evidence } from "@/lib/contract";
 import { cn } from "@/lib/utils";
-import { ExternalLink, FileText } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 const SOURCE_LABEL: Record<Evidence["source"], string> = {
   cala: "Cala",
@@ -13,8 +15,9 @@ const SOURCE_LABEL: Record<Evidence["source"], string> = {
 
 /**
  * Compact, inline evidence for a report section. Rendered *within* the section
- * it supports (a bordered card list), light-themed to match the document.
- * Renders nothing when there is no evidence and no supporting image.
+ * it supports as a tidy vertical list of flat cards (hairline border, no
+ * shadow), light-themed to match the document. Renders nothing when there is no
+ * evidence and no supporting image.
  */
 export function EvidencePanel({
   evidence,
@@ -43,37 +46,41 @@ export function EvidencePanel({
       )}
 
       {evidence.length > 0 && (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="flex flex-col gap-2">
           {evidence.map((ev) => (
-            <li
-              key={ev.id}
-              className="rounded-lg border border-[#dedede] bg-card p-3 transition-colors hover:border-foreground/20"
-            >
-              <div className="flex items-center gap-2">
-                <FileText className="size-3.5 shrink-0 text-muted-foreground" />
-                <span className="rounded-full border border-[#dedede] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {SOURCE_LABEL[ev.source]}
-                </span>
-                {ev.url && (
-                  <a
-                    href={ev.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ml-auto text-muted-foreground transition-colors hover:text-foreground"
-                    aria-label="Open source"
+            <li key={ev.id}>
+              <Card
+                size="sm"
+                className="gap-2 rounded-lg border border-[#dedede] bg-white p-3 ring-0"
+              >
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className="border-[#dedede] text-[10px] uppercase tracking-wide text-muted-foreground"
                   >
-                    <ExternalLink className="size-3.5" />
-                  </a>
-                )}
-              </div>
-              <p className="mt-1.5 text-sm font-medium leading-snug text-foreground">
-                {ev.title}
-              </p>
-              {ev.snippet && (
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  {ev.snippet}
+                    {SOURCE_LABEL[ev.source]}
+                  </Badge>
+                  {ev.url && (
+                    <a
+                      href={ev.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ml-auto text-muted-foreground transition-colors hover:text-foreground"
+                      aria-label="Open source"
+                    >
+                      <ExternalLink className="size-3.5" />
+                    </a>
+                  )}
+                </div>
+                <p className="text-sm font-medium leading-snug text-foreground">
+                  {ev.title}
                 </p>
-              )}
+                {ev.snippet && (
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {ev.snippet}
+                  </p>
+                )}
+              </Card>
             </li>
           ))}
         </ul>
