@@ -6,8 +6,8 @@ import { STATUS_LABEL } from "./agents";
 
 /**
  * Closing section of the report: opportunities ranked by Goliath Score, plus
- * replay / full-report actions. Rendered as the final appended block of the
- * scrolling document (the report's conclusion), not a separate takeover.
+ * replay action. Rendered as the final appended block of the scrolling document
+ * (the report's conclusion), not a separate takeover.
  */
 export function Finale({
   opportunities,
@@ -75,14 +75,6 @@ export function Finale({
         >
           <RotateCcw className="size-4" />
           Replay briefing
-        </button>
-        <button
-          type="button"
-          disabled
-          title="Coming in the report detail view"
-          className="inline-flex h-10 cursor-not-allowed items-center rounded-md border border-[#dedede] px-5 text-sm font-medium text-muted-foreground"
-        >
-          View full report
         </button>
       </div>
     </section>

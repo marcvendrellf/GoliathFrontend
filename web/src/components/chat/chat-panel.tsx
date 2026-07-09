@@ -32,12 +32,6 @@ export function ChatPanel({
   if (!hasMessages) {
     return (
       <div className="relative h-full overflow-y-auto bg-[var(--bg)] [scrollbar-gutter:stable_both-edges]">
-        <div className="absolute top-[8.5px] right-[16px] z-10 flex items-center gap-1.5 text-[var(--text-body)] text-small">
-          <span className="flex size-5 items-center justify-center rounded-full border border-[var(--border-1)] text-[11px]">
-            ◎
-          </span>
-          <span>476</span>
-        </div>
         <div className="flex min-h-full flex-col items-center justify-center px-6 pt-[2vh] pb-[22vh]">
           <h1 className="mb-7 max-w-[48rem] text-balance font-season text-[30px] text-[var(--text-primary)]">
             What should we find, Felipe?
