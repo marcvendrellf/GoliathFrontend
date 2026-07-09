@@ -429,7 +429,7 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
-type OrbBox = { x: number; y: number; size: number };
+type OrbBox = { cx: number; cy: number; size: number };
 
 function TravelingOrb({
   agent,
@@ -454,7 +454,7 @@ function TravelingOrb({
   onDocked: (i: number) => void;
   signal: string;
 }) {
-  const [box, setBox] = useState({ x: 0, y: 0, size: WAIT_SIZE });
+  const [box, setBox] = useState({ cx: 0, cy: 0, size: WAIT_SIZE });
   const boxRef = useRef(box);
   boxRef.current = box;
 
@@ -465,8 +465,8 @@ function TravelingOrb({
 
   const targetFromRect = useCallback(
     (rect: DOMRect, size = rect.width) => ({
-      x: rect.left + rect.width / 2 - size / 2,
-      y: rect.top + rect.height / 2 - size / 2,
+      cx: rect.left + rect.width / 2,
+      cy: rect.top + rect.height / 2,
       size,
     }),
     [],
@@ -474,8 +474,8 @@ function TravelingOrb({
 
   const talkingTarget = useCallback(() => {
     return {
-      x: STAGE_CENTER_X - STAGE_SIZE / 2,
-      y: window.innerHeight * STAGE_CENTER_Y_RATIO - STAGE_SIZE / 2,
+      cx: STAGE_CENTER_X,
+      cy: window.innerHeight * STAGE_CENTER_Y_RATIO,
       size: STAGE_SIZE,
     };
   }, []);
@@ -506,13 +506,13 @@ function TravelingOrb({
       }
       const cur = boxRef.current;
       const next = {
-        x: lerp(cur.x, target.x, 0.2),
-        y: lerp(cur.y, target.y, 0.2),
+        cx: lerp(cur.cx, target.cx, 0.2),
+        cy: lerp(cur.cy, target.cy, 0.2),
         size: lerp(cur.size, target.size, mode === "talking" ? 0.28 : 0.2),
       };
       const settled =
-        Math.abs(next.x - target.x) < 0.5 &&
-        Math.abs(next.y - target.y) < 0.5 &&
+        Math.abs(next.cx - target.cx) < 0.5 &&
+        Math.abs(next.cy - target.cy) < 0.5 &&
         Math.abs(next.size - target.size) < 0.5;
       if (settled) {
         moveTo(target);
@@ -538,13 +538,13 @@ function TravelingOrb({
         const target = targetFromRect(r, r.width);
         const cur = boxRef.current;
         const next = {
-          x: lerp(cur.x, target.x, 0.14),
-          y: lerp(cur.y, target.y, 0.14),
+          cx: lerp(cur.cx, target.cx, 0.14),
+          cy: lerp(cur.cy, target.cy, 0.14),
           size: lerp(cur.size, target.size, 0.14),
         };
         const settled =
-          Math.abs(next.x - target.x) < 0.5 &&
-          Math.abs(next.y - target.y) < 0.5 &&
+          Math.abs(next.cx - target.cx) < 0.5 &&
+          Math.abs(next.cy - target.cy) < 0.5 &&
           Math.abs(next.size - target.size) < 0.5;
         if (settled) {
           moveTo(target);
@@ -572,28 +572,37 @@ function TravelingOrb({
       <div
         className="pointer-events-none fixed left-0 top-0 z-30"
         style={{
-          width: STAGE_SIZE,
-          height: STAGE_SIZE,
-          transformOrigin: "0 0",
-          transform: `translate(${box.x}px, ${box.y}px) scale(${scale})`,
+          width: 0,
+          height: 0,
+          transform: `translate(${box.cx}px, ${box.cy}px)`,
           opacity: mode === "hidden" ? 0 : 1,
           filter: mode === "waiting" ? "grayscale(1) opacity(0.45)" : "none",
           transition,
           willChange: "transform",
         }}
       >
-        <PresentationOrb
-          colors={colors}
-          seed={seed}
-          agentState={agentState}
-          className="h-full w-full"
-        />
+        <div
+          style={{
+            width: STAGE_SIZE,
+            height: STAGE_SIZE,
+            transform: `translate(-50%, -50%) scale(${scale})`,
+            transformOrigin: "center",
+            willChange: "transform",
+          }}
+        >
+          <PresentationOrb
+            colors={colors}
+            seed={seed}
+            agentState={agentState}
+            className="h-full w-full"
+          />
+        </div>
       </div>
       {/* Name label rides the same eased path but never scales. */}
       <div
         className="pointer-events-none fixed left-0 top-0 z-30"
         style={{
-          transform: `translate(${box.x + box.size / 2}px, ${box.y + box.size + 10}px)`,
+          transform: `translate(${box.cx}px, ${box.cy + box.size / 2 + 10}px)`,
           opacity: mode === "talking" ? 1 : 0,
           transition: `opacity 300ms ease, transform 80ms ${ease}`,
         }}
