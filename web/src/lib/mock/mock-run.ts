@@ -340,7 +340,7 @@ export const MOCK_REPORT_SUMMARIES: ReportSummary[] = [
 ];
 
 /**
- * Snapshot of MOCK_RUN as it would look `elapsedMs` after POST /api/runs —
+ * Snapshot of MOCK_RUN as it would look `elapsedMs` after POST /api/runs.
  * poll this from the live view to animate agent spawn/research without a
  * backend. The run completes at 18s.
  */

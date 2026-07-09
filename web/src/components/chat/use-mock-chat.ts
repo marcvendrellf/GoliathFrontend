@@ -115,27 +115,7 @@ function blocksFromRun(run?: Run): ContentBlock[] {
 }
 
 function seedMessages(): ChatMessage[] {
-  return [
-    {
-      id: "assistant-seed",
-      role: "assistant",
-      content: "",
-      contentBlocks: [
-        {
-          type: "text",
-          content:
-            "Tell me the market, geography, and stage you care about. I’ll spin up the right research agents and keep the work visible.",
-        },
-        {
-          type: "options",
-          options: [
-            { id: DEMO_QUERY, label: "Barcelona AI opportunities" },
-            { id: "Find seed-stage AI infrastructure startups in Spain.", label: "Spain AI infra" },
-          ],
-        },
-      ],
-    },
-  ];
+  return [];
 }
 
 export function useMockChat({
@@ -189,13 +169,8 @@ export function useMockChat({
         content: "",
         contentBlocks: [
           {
-            type: "tool_call",
-            toolCall: {
-              id: "planning",
-              name: "plan_agents",
-              displayTitle: "Planning specialist agents",
-              status: "executing",
-            },
+            type: "thinking",
+            content: "Planning specialist agents",
           },
         ],
       },
@@ -239,4 +214,3 @@ export function useMockChat({
     submit,
   };
 }
-

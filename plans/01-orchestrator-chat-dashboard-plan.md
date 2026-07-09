@@ -1,4 +1,4 @@
-# Plan — Goliath Chat Dashboard (Remaining Work Only)
+# Plan: Goliath Chat Dashboard (Remaining Work Only)
 
 Work only in `web/` on `dev` in the main repo:
 `/Users/felipetrejos/Developer/Personal/hackathons/GoliathFrontend`.
@@ -37,7 +37,7 @@ pnpm exec tsc --noEmit
 
 ## Still Missing
 
-### R4 — Center Chat Panel
+### R4: Center Chat Panel
 
 Create `web/src/components/chat/`.
 
@@ -73,7 +73,7 @@ Important simplifications:
   `onRunStarted(run)` so the page can start polling/replaying the mock run.
 - Export `ChatPanel`, designed to fill the center pane.
 
-### R5 — Finish Workflow Canvas
+### R5: Finish Workflow Canvas
 
 Complete `web/src/components/canvas/`.
 
@@ -96,7 +96,7 @@ Notes:
 - The current `web/src/app/page.tsx` still has placeholder ReactFlow nodes and
   should be replaced in R6.
 
-### R6 — Compose, Wire, Verify
+### R6: Compose, Wire, Verify
 
 Rewrite `web/src/app/page.tsx` as a client page:
 

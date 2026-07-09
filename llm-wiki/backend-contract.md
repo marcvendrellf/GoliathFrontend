@@ -3,7 +3,7 @@
 Contract between the frontend (`web/`) and the backend repo (Axel and Josep).
 The canonical, always-up-to-date version is the TypeScript file
 `web/src/lib/contract.ts`; this page mirrors it. Change both together and tell
-the team — no silent drift.
+the team. No silent drift.
 
 Mock data matching this contract lives in `web/src/lib/mock/mock-run.ts`, and
 `web/src/lib/api.ts` falls back to it automatically when
@@ -127,7 +127,7 @@ export type PresentationSegment = {
   agentId: string;      // which AgentPlan speaks this segment
   title: string;
   subtitle: string;
-  script: string;       // full spoken text — used as subtitles
+  script: string;       // full spoken text used as subtitles
   audioUrl?: string;    // ElevenLabs mp3 URL; absent → silent + subtitles
   imageUrl?: string;
   evidenceIds: string[];

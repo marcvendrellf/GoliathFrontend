@@ -4,7 +4,7 @@
  * This file is the single source of truth for the data shapes exchanged with
  * the backend repo (Axel & Josep). It mirrors `llm-wiki/backend-contract.md`.
  * If a field needs to change, change it here AND in the wiki, and tell the
- * backend team — do not let shapes drift silently.
+ * backend team. Do not let shapes drift silently.
  *
  * Endpoints the backend must provide (JSON over HTTP):
  *
@@ -141,7 +141,7 @@ export type PresentationSegment = {
   agentId: string; // which AgentPlan speaks this segment
   title: string;
   subtitle: string;
-  script: string; // full spoken text — used as subtitles
+  script: string; // full spoken text used as subtitles
   audioUrl?: string; // ElevenLabs mp3 URL; frontend falls back to silent+subtitles
   imageUrl?: string; // optional supporting chart/image
   evidenceIds: string[]; // references Opportunity.evidence ids

@@ -8,7 +8,6 @@ import {
   Check,
   CircleInfo,
   Database,
-  Loader,
   Search,
   ShieldCheck,
   Square,
@@ -36,7 +35,20 @@ type OptionsSegment = {
   items: OptionItem[];
 };
 
-type MessageSegment = AgentGroupSegment | TextSegment | OptionsSegment;
+type ThinkingSegment = {
+  type: "thinking";
+  id: string;
+  content: string;
+};
+
+type MessageSegment = AgentGroupSegment | TextSegment | OptionsSegment | ThinkingSegment;
+
+const THINKING_BLOCKS = [
+  { color: "#2ABBF8", delay: "0s" },
+  { color: "#00F701", delay: "0.2s" },
+  { color: "#FA4EDF", delay: "0.6s" },
+  { color: "#FFCC02", delay: "0.4s" },
+] as const;
 
 const AGENT_LABELS: Record<string, string> = {
   orchestrator: "Goliath Partner",
@@ -72,7 +84,10 @@ function parseBlocks(blocks: ContentBlock[]): MessageSegment[] {
   };
 
   blocks.forEach((block, index) => {
-    if (block.type === "thinking") return;
+    if (block.type === "thinking") {
+      segments.push({ type: "thinking", id: `thinking-${index}`, content: block.content });
+      return;
+    }
 
     if (block.type === "text" && block.content) {
       const last = segments[segments.length - 1];
@@ -233,9 +248,17 @@ function Options({
 
 export function PendingTagIndicator() {
   return (
-    <div className="flex items-center gap-2 text-[var(--text-tertiary)] text-sm">
-      <Loader className="size-4" animate />
-      <span>Goliath is thinking</span>
+    <div className="flex animate-stream-fade-in items-center gap-2 py-2">
+      <div className="grid size-[16px] grid-cols-2 gap-[1.5px]">
+        {THINKING_BLOCKS.map((block, index) => (
+          <div
+            key={index}
+            className="animate-thinking-block rounded-xs"
+            style={{ backgroundColor: block.color, animationDelay: block.delay }}
+          />
+        ))}
+      </div>
+      <span className="text-[var(--text-body)] text-sm">Thinking...</span>
     </div>
   );
 }
@@ -266,6 +289,9 @@ export function MessageContent({
         if (segment.type === "options") {
           return <Options key={segment.items.map((item) => item.id).join("-")} items={segment.items} onSelect={onOptionSelect} />;
         }
+        if (segment.type === "thinking") {
+          return <PendingTagIndicator key={segment.id} />;
+        }
         return (
           <div
             key={segment.id}
@@ -290,4 +316,3 @@ export function assistantMessageHasRenderableContent(
 ) {
   return Boolean((blocks?.length ?? 0) > 0 || fallbackContent?.trim());
 }
-
