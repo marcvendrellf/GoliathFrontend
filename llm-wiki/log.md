@@ -59,3 +59,9 @@
   opportunities, six MP3 narration clips, and their word timings, so the first
   suggested action works offline from the frontend while all other prompts keep
   their backend path.
+
+- Reworked briefing orb choreography after the scaled-canvas handoff distorted
+  and displaced the active speaker. The briefing now has one fixed 220px stage
+  slot and changes speakers with opacity fades only; waiting and gutter orbs
+  are independently rendered at their final sizes. Extended the frontend demo
+  replay to 24 seconds with staggered planning, research, and synthesis states.

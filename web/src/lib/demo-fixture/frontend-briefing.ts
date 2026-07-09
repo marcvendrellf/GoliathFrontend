@@ -118,7 +118,7 @@ export const FRONTEND_DEMO_REPORT: FinalReport = {
 
 const EVENT_TIMELINE: { atMs: number; event: RunEvent }[] = [
   {
-    atMs: 500,
+    atMs: 900,
     event: {
       id: "demo-plan",
       timestamp: T0,
@@ -128,7 +128,7 @@ const EVENT_TIMELINE: { atMs: number; event: RunEvent }[] = [
     },
   },
   ...FRONTEND_DEMO_AGENTS.map((agent, index) => ({
-    atMs: 1_200 + index * 650,
+    atMs: 2_000 + index * 1_100,
     event: {
       id: `demo-spawn-${agent.id}`,
       timestamp: T0,
@@ -138,7 +138,7 @@ const EVENT_TIMELINE: { atMs: number; event: RunEvent }[] = [
     },
   })),
   {
-    atMs: 6_000,
+    atMs: 9_000,
     event: {
       id: "demo-finding",
       timestamp: T0,
@@ -149,7 +149,7 @@ const EVENT_TIMELINE: { atMs: number; event: RunEvent }[] = [
     },
   },
   {
-    atMs: 12_000,
+    atMs: 17_000,
     event: {
       id: "demo-segment-ready",
       timestamp: T0,
@@ -158,7 +158,7 @@ const EVENT_TIMELINE: { atMs: number; event: RunEvent }[] = [
     },
   },
   {
-    atMs: 15_000,
+    atMs: 24_000,
     event: {
       id: "demo-complete",
       timestamp: T0,
@@ -175,12 +175,12 @@ export function frontendDemoRunAt(elapsedMs: number): Run {
   const spawned = new Set(
     events.filter((event) => event.type === "agent.spawned").map((event) => event.agentId),
   );
-  const complete = elapsedMs >= 15_000;
+  const complete = elapsedMs >= 24_000;
 
   return {
     id: "run-demo-barcelona-ai",
     query: runDump.query,
-    status: complete ? "complete" : elapsedMs >= 12_000 ? "synthesizing" : elapsedMs >= 1_200 ? "researching" : "planning_agents",
+    status: complete ? "complete" : elapsedMs >= 17_000 ? "synthesizing" : elapsedMs >= 2_000 ? "researching" : "planning_agents",
     agents: FRONTEND_DEMO_AGENTS.map((agent) => ({
       ...agent,
       status: complete ? "done" : spawned.has(agent.id) ? "researching" : "pending",
