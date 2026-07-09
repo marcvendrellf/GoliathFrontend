@@ -12,3 +12,6 @@
 - Locked opportunity scoring as a visible `Goliath Score` from 0 to 100.
 - Added opportunity status labels: hot, warming, neutral, cooling, and not hot.
 - Added current-opportunities subagent role and concise prediction requirement.
+- Created `dev` as the active integration branch.
+- Documented one-branch-per-issue workflow.
+- Updated scope for 2.5-hour timebox and removed the clarifying-question flow.

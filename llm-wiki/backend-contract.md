@@ -9,7 +9,6 @@ Minimum:
 
 ```txt
 POST /api/runs
-POST /api/runs/:runId/answers
 GET /api/runs/:runId
 GET /api/reports
 GET /api/reports/:runId
@@ -28,7 +27,6 @@ Polling `GET /api/runs/:runId` is acceptable if streaming is too slow to build.
 ```ts
 export type RunStatus =
   | "awaiting_query"
-  | "asking_questions"
   | "planning_agents"
   | "researching"
   | "synthesizing"
@@ -41,27 +39,12 @@ export type Run = {
   id: string;
   status: RunStatus;
   query: string;
-  clarifyingQuestions: ClarifyingQuestion[];
-  answers: ClarifyingAnswer[];
   agents: AgentPlan[];
   events: RunEvent[];
   opportunities: Opportunity[];
   finalReport?: FinalReport;
   createdAt: string;
   updatedAt: string;
-};
-```
-
-```ts
-export type ClarifyingQuestion = {
-  id: string;
-  question: string;
-  purpose: string;
-};
-
-export type ClarifyingAnswer = {
-  questionId: string;
-  answer: string;
 };
 ```
 
@@ -81,7 +64,6 @@ export type RunEvent = {
   id: string;
   timestamp: string;
   type:
-    | "orchestrator.question"
     | "orchestrator.plan"
     | "agent.spawned"
     | "agent.message"
@@ -149,8 +131,7 @@ export type PresentationSegment = {
 
 ## Backend Responsibilities
 
-- Generate 5 clarifying questions.
-- Accept answers and produce subagent plan.
+- Produce subagent plan directly from the user query.
 - Run subagents or mock them with credible structured output.
 - Produce events for frontend animation.
 - Produce final opportunities with evidence and predictions.

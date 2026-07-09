@@ -2,7 +2,7 @@
 
 ## Core Model
 
-The orchestrator is the user's VC partner. It asks clarifying questions, decides
+The orchestrator is the user's VC partner. It reads the user's query, decides
 which subagents are needed, and coordinates the final synthesis.
 
 Subagents should have:
@@ -17,8 +17,8 @@ Subagents should have:
 
 ### Orchestrator / Partner
 
-- Purpose: interview the user, decide the research plan, and coordinate the
-  final recommendation.
+- Purpose: interpret the user query, decide the research plan, and coordinate
+  the final recommendation.
 - Voice: calm senior VC partner.
 - Presentation role: intro and conclusion if time allows.
 

@@ -9,12 +9,6 @@
   investors, location, valuation, traction, strategic fit, risk?
 - Do we need a visible formula, or only natural-language explanation?
 
-## User clarification questions
-
-- Are the 5 questions generated dynamically or can they be templated?
-- Should the user answer all 5 at once or one by one?
-- What exact questions should be used for the demo scenario?
-
 ## Backend implementation
 
 - What stack are Axel and Josep using?

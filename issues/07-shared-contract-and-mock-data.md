@@ -11,7 +11,7 @@ Title: Define shared frontend-backend contract and mock demo data
 ## In Scope
 - TypeScript contract for frontend.
 - Backend model mirror or OpenAPI equivalent.
-- Mock `Run` with query, 5 questions, 4 agents, events, scored opportunities,
+- Mock `Run` with query, 4 agents, events, scored opportunities,
   status labels, and final report segments.
 - Example final report with placeholder audio URLs or no-audio fallback.
 - Agreement on route names and status lifecycle.

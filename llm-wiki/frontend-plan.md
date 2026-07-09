@@ -7,6 +7,7 @@
 - Avoid pixel-art room complexity.
 - Use mock data from a shared contract immediately.
 - Keep the UI understandable to judges within 30 seconds.
+- Timebox is 2.5 hours; skip the clarifying-question flow.
 
 ## Felipe Scope
 
@@ -14,8 +15,6 @@ Felipe owns the live orchestration and research experience:
 
 - Initial query input.
 - Chat UI between user and orchestrator.
-- Display of 5 clarifying questions.
-- User answers.
 - Animated orchestrator decision.
 - Dynamic subagent spawn animation.
 - Subagent representation during research.
@@ -25,7 +24,6 @@ Felipe owns the live orchestration and research experience:
 Likely views/components:
 
 - `OrchestratorChat`
-- `ClarifyingQuestions`
 - `AgentSpawnAnimation`
 - `AgentOrb`
 - `AgentResearchStage`

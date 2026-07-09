@@ -4,8 +4,8 @@ Frontend owns the user-facing Goliath experience.
 
 ## Team Ownership
 
-- Felipe: orchestrator chat, 5 clarifying questions, agent representation,
-  subagent spawn animation, and live research/talking state.
+- Felipe: orchestrator chat, agent representation, subagent spawn animation,
+  and live research/talking state.
 - Marc: final narrated presentation, conversation-style final report, report
   list, report detail, and investment opportunity cards.
 
@@ -14,8 +14,9 @@ Frontend owns the user-facing Goliath experience.
 - No Polymarket/trading UI.
 - No pixel-art office dependency.
 - Goliath is a VC opportunity intelligence product.
-- User enters a VC query, answers 5 questions, then sees spawned subagents
-  research and present findings.
+- User enters a VC query, the orchestrator immediately spawns subagents, then
+  the user sees them research and present findings.
+- Timebox is 2.5 hours; drop the clarifying-question flow.
 - Final presentation uses subagent orbs, subtitles, and ElevenLabs audio.
 - Investment opportunities must show a score.
 - Predictions should be concise and precise.
@@ -23,7 +24,6 @@ Frontend owns the user-facing Goliath experience.
 ## Frontend Needs From Backend
 
 - Run lifecycle and events.
-- Orchestrator questions.
 - Subagent plan.
 - Agent messages/findings.
 - Opportunities with score, status, prediction, confidence, risk, and evidence.
@@ -37,3 +37,11 @@ Read:
 - `../issues/01-felipe-orchestrator-chat-agent-animation.md`
 - `../issues/02-marc-final-narrated-presentation.md`
 - `../issues/03-marc-report-list-and-detail.md`
+
+## Git Workflow
+
+- Main integration branch: `dev`.
+- Create one branch per GitHub issue from `dev`.
+- Branch naming: `issue-<number>-short-name`.
+- Open pull requests back into `dev`.
+- Keep `main` stable for demo-ready snapshots.

@@ -14,8 +14,8 @@
 - User starts by entering a query such as: "Show me startup opportunities of
   investment in Barcelona related to AI."
 - The orchestrator is framed as the user's partner.
-- The orchestrator asks 5 clarifying questions.
-- After clarification, the orchestrator decides how many subagents to spawn.
+- The 5-question clarification flow has been dropped due to a 2.5-hour timebox.
+- The orchestrator should go directly from user query to subagent planning.
 - Example target: 4 subagents for the initial demo.
 - Felipe owns frontend chat plus agent representation and animation during
   orchestration/research.
@@ -28,7 +28,6 @@
 
 ### Wow Moments
 
-- The user is interviewed by the orchestrator through clarifying questions.
 - The orchestrator dynamically decides how many agents to spawn.
 - The frontend animates spawned subagents and their research/talking activity.
 - The final presentation shows subagent orbs entering one at a time.
@@ -61,5 +60,6 @@
 - Exact backend stack and API mechanism.
 - Whether reports are persisted or in memory.
 - Exact factors for the `Goliath Score`.
+- Exact implementation meaning of "LLM is in the frontend".
 - Exact Cala data fields available during the hackathon.
 - Whether final audio is generated as one file, per-agent clips, or streamed.

@@ -3,32 +3,28 @@
 ## Product Statement
 
 Goliath helps VCs ask natural-language questions about startups and investment
-opportunities. It interviews the user, spawns a tailored research team of AI
-agents, and presents the final investment opportunity analysis as a narrated
-multi-agent presentation.
+opportunities. It spawns a tailored research team of AI agents and presents the
+final investment opportunity analysis as a narrated multi-agent presentation.
 
 ## Primary Demo Flow
 
 1. User enters a VC research query.
-2. Orchestrator asks 5 clarifying questions.
-3. User answers the questions.
-4. Orchestrator decides how many agents to spawn and what each agent should
+2. Orchestrator immediately decides how many agents to spawn and what each agent should
    investigate.
-5. Frontend animates the subagents appearing.
-6. Backend runs multi-agent research using Cala AI and news/startup sources.
-7. Frontend shows subagents talking/researching while the backend works.
-8. Backend returns final findings, predictions, opportunities, and report
+3. Frontend animates the subagents appearing.
+4. Backend runs multi-agent research using Cala AI and news/startup sources.
+5. Frontend shows subagents talking/researching while the backend works.
+6. Backend returns final findings, predictions, opportunities, and report
    segments.
-9. Final presentation starts.
-10. Subagent orbs enter one at a time.
-11. Each subagent speaks its report section using ElevenLabs audio.
-12. UI shows subtitles and ideally supporting data/images.
-13. User lands on or can open a final report list/detail view.
+7. Final presentation starts.
+8. Subagent orbs enter one at a time.
+9. Each subagent speaks its report section using ElevenLabs audio.
+10. UI shows subtitles and ideally supporting data/images.
+11. User lands on or can open a final report list/detail view.
 
 ## In Scope
 
 - Natural-language query input.
-- 5 orchestrator clarifying questions.
 - Dynamic subagent plan returned to frontend.
 - Animated agent spawn/research state.
 - Multi-agent opportunity discovery.
@@ -55,7 +51,6 @@ Show me startup opportunities of investment in Barcelona related to AI.
 ## Minimum Successful Demo
 
 - One user query.
-- Five clarifying questions.
 - Four spawned subagents.
 - Research progress animation.
 - Three to five final opportunities or findings.
@@ -63,6 +58,11 @@ Show me startup opportunities of investment in Barcelona related to AI.
 - A report list/detail page where the final output can be reviewed.
 - Investment opportunity cards with a clear score.
 - Concise, precise predictions for each opportunity.
+
+## Timebox
+
+The team has 2.5 hours. The clarifying-question interview is dropped. The demo
+should go directly from query to agent spawning and research.
 
 ## ROI / Opportunity Scoring
 
