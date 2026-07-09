@@ -20,13 +20,14 @@ import {
 import { WordReveal } from "./word-reveal";
 
 const DEFAULT_SEGMENT_MS = 8000;
+const SPEAKER_PAUSE_MS = 900;
 
 // Each canvas is rendered at its final dimensions. Never CSS-scale a Three.js
 // canvas: a transform can race its ResizeObserver and warp the shader frame.
 const WAIT_SIZE = 72;
 const DOCK_SIZE = 36;
 
-type Phase = "playing" | "finished";
+type Phase = "playing" | "pausing" | "finished";
 export function FinalPresentation({ report }: { report: FinalReport }) {
   const agents = useMemo(() => deriveAgents(report), [report]);
   const evidenceMap = useMemo(() => buildEvidenceMap(report), [report]);
@@ -56,6 +57,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rafRef = useRef<number | null>(null);
+  const handoffTimerRef = useRef<number | null>(null);
   // Timer fallback bookkeeping for segments without playable audio.
   const timer = useRef<{
     id: number;
@@ -64,20 +66,30 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     total: number;
   } | null>(null);
 
-  const activeSectionRef = useRef<HTMLElement | null>(null);
   const finaleRef = useRef<HTMLDivElement | null>(null);
 
   const currentSegment = segments[index];
 
-  const advance = useCallback(() => {
-    setIndex((i) => {
-      if (i >= segments.length - 1) {
+  const clearHandoffTimer = useCallback(() => {
+    if (handoffTimerRef.current !== null) {
+      window.clearTimeout(handoffTimerRef.current);
+      handoffTimerRef.current = null;
+    }
+  }, []);
+
+  const pauseBetweenSpeakers = useCallback(() => {
+    setProgress(1);
+    setPhase("pausing");
+    clearHandoffTimer();
+    handoffTimerRef.current = window.setTimeout(() => {
+      if (index >= segments.length - 1) {
         setPhase("finished");
-        return i;
+        return;
       }
-      return i + 1;
-    });
-  }, [segments.length]);
+      setIndex((current) => current + 1);
+      setPhase("playing");
+    }, SPEAKER_PAUSE_MS);
+  }, [clearHandoffTimer, index, segments.length]);
 
   const clearTimer = useCallback(() => {
     if (timer.current) {
@@ -111,14 +123,14 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
     const startTimerFallback = (ms: number) => {
       const startedAt = Date.now();
-      const id = window.setTimeout(advance, ms);
+      const id = window.setTimeout(pauseBetweenSpeakers, ms);
       timer.current = { id, startedAt, remaining: ms, total: ms };
     };
 
     if (currentSegment.audioUrl) {
       const audio = new Audio(resolveApiUrl(currentSegment.audioUrl));
       audioRef.current = audio;
-      audio.onended = advance;
+      audio.onended = pauseBetweenSpeakers;
       audio.onerror = () => {
         // Audio failed to load/play. Fall back to the silent timer.
         audioRef.current = null;
@@ -152,15 +164,18 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   }, [phase, index]);
 
   useEffect(() => teardown, [teardown]);
+  useEffect(() => clearHandoffTimer, [clearHandoffTimer]);
 
-  // Auto-scroll: keep the section being written (or the finale) in view.
+  // Only the finale needs scrolling; the live transcript remains centered.
   useEffect(() => {
-    const el = phase === "finished" ? finaleRef.current : activeSectionRef.current;
-    el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [phase, index]);
+    if (phase === "finished") {
+      finaleRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [phase]);
 
   const replay = () => {
     teardown();
+    clearHandoffTimer();
     setIndex(0);
     setProgress(0);
     setPhase("playing");
@@ -174,7 +189,10 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
       .filter((e): e is Evidence => Boolean(e));
 
   const completed = (i: number) => phase === "finished" || i < index;
-  const visibleSegments = segments.slice(0, index + 1);
+  const visibleSegments = segments.slice(
+    0,
+    phase === "finished" ? segments.length : index,
+  );
   const activeAgent = agents.find((agent) => agent.id === activeAgentId);
 
   return (
@@ -238,6 +256,46 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
         })}
       </div>
 
+      {/* The live transcript is a dedicated, viewport-centered stage. It does
+          not inherit the document flow of completed report sections. */}
+      {currentSegment && phase !== "finished" && (
+        <section
+          className="pointer-events-none fixed left-1/2 top-1/2 z-20 w-[min(43rem,calc(100vw-3rem))] -translate-x-1/2 -translate-y-1/2 bg-white/95 px-6 py-5 transition-opacity duration-300 ease-out"
+          style={{ opacity: phase === "playing" ? 1 : 0 }}
+          aria-live="polite"
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            {activeAgent?.name ?? "Goliath"}
+            {activeAgent && (
+              <>
+                <span className="mx-1.5 text-[#dedede]">/</span>
+                <span className="font-medium normal-case tracking-normal">
+                  {activeAgent.role}
+                </span>
+              </>
+            )}
+          </p>
+          <div className="mt-3">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              {currentSegment.title}
+            </h2>
+            {currentSegment.subtitle && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {currentSegment.subtitle}
+              </p>
+            )}
+          </div>
+          <WordReveal
+            text={currentSegment.script}
+            progress={progress}
+            active={phase === "playing"}
+            wordTimings={currentSegment.wordTimings}
+            durationMs={currentSegment.durationMs}
+            className="mt-4 text-foreground/90"
+          />
+        </section>
+      )}
+
       {/* The report: sections accumulate top-to-bottom as agents speak. */}
       <main className="mx-auto w-full max-w-3xl px-6 pb-48 pt-8">
         <div className="mb-8 pl-[3.75rem]">
@@ -251,13 +309,11 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
         <div className="flex flex-col divide-y divide-[#dedede]">
           {visibleSegments.map((segment, i) => {
-            const isActive = phase === "playing" && i === index;
             const agent = agents.find((a) => a.id === segment.agentId);
             const style = agent ? agentStyle.get(agent.id) : undefined;
             return (
               <section
                 key={segment.id}
-                ref={isActive ? activeSectionRef : undefined}
                 className="flex gap-4 py-8 first:pt-0"
               >
                 <div className="w-11 shrink-0">
@@ -297,8 +353,8 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
                   <WordReveal
                     text={segment.script}
-                    progress={isActive ? progress : 1}
-                    active={isActive}
+                    progress={1}
+                    active={false}
                     wordTimings={segment.wordTimings}
                     durationMs={segment.durationMs}
                     className="mt-4 text-foreground/90"

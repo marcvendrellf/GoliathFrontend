@@ -65,3 +65,8 @@
   slot and changes speakers with opacity fades only; waiting and gutter orbs
   are independently rendered at their final sizes. Extended the frontend demo
   replay to 24 seconds with staggered planning, research, and synthesis states.
+
+- Added a 900ms fade-out/fade-in pause between narrated briefing segments.
+  The in-progress, word-timed transcript now has a dedicated viewport-centered
+  stage; completed sections are appended to the report history only after their
+  speaker finishes.
