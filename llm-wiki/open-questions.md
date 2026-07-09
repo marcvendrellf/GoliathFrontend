@@ -12,8 +12,9 @@
 ## Backend implementation
 
 - Resolved 2026-07-09: Josep's backend is FastAPI/Pydantic, with an in-memory
-  run/report store, polling endpoints, and an SSE endpoint. It runs locally
-  without provider keys using deterministic mock data.
+  run/report store, polling endpoints, and an SSE endpoint. Demo mode now uses
+  the repository-backed `run_dump/final` briefing rather than generating new
+  mock research per prompt.
 - Resolved 2026-07-09: local integration now stages mock events, returns
   speaker/evidence/timing metadata, resolves browser-playable audio URLs, and
   has alias-correct SSE. See the [backend audit](sources/backend-local-integration-audit-2026-07-09.md).

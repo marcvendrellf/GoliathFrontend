@@ -44,3 +44,7 @@
   speaker/evidence/timing metadata, browser-resolvable audio URLs, and
   alias-correct SSE. Backend tests (38) and the frontend build pass; the real
   browser flow now reaches the populated final report.
+
+- Pulled Felipe's final briefing polish and the backend's scored run dump.
+  Demo mode now uses the committed `run_dump/final` six-segment briefing with
+  MP3 clips and word timings, while retaining the normal run/report API flow.

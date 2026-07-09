@@ -32,18 +32,20 @@ Frontend polls `GET /api/runs/:runId` every 1-2 seconds while the run is not
 ## Local integration audit (2026-07-09)
 
 The backend now exists locally at sibling path `../GoliathBackend`, cloned from
-[`josep-audenis/goliath-backend`](https://github.com/josep-audenis/goliath-backend)
-at `be3bf7c`. It runs on macOS arm64/Python 3.13 without keys using its
-deterministic mock pipeline; its 38-test suite and the core HTTP endpoints pass.
+[`josep-audenis/goliath-backend`](https://github.com/josep-audenis/goliath-backend).
+Its default `USE_DEMO_FIXTURE=true` mode serves the committed `run_dump/final`
+briefing through the normal API, including six MP3 clips and exact word timings.
+This is intentionally fixed demo content; each request still gets a fresh run
+and report ID.
 
 To route the existing frontend to it, set
 `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000` in `web/.env.local` and
 restart Next.js. The API's permissive development CORS allows the frontend call.
 
-The integrated browser flow now verifies staged mock events, report speaker and
-evidence metadata, timing-aware subtitles, and final-report navigation. Audio
-URLs are backend-origin aware, and SSE now serializes `timestamp` consistently.
-See the [source audit](sources/backend-local-integration-audit-2026-07-09.md).
+The integrated browser flow verifies report speaker/evidence metadata,
+timing-aware subtitles, backend-origin-aware audio, and final-report navigation.
+Set `USE_DEMO_FIXTURE=false` only when switching back to the generated mock or
+live-research pipeline. See the [source audit](sources/backend-local-integration-audit-2026-07-09.md).
 
 ## Core Types
 
