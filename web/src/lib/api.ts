@@ -9,6 +9,7 @@
 
 import type { FinalReport, ReportSummary, Run } from "@/lib/contract";
 import { FRONTEND_DEMO_RUN_ID, FRONTEND_DEMO_QUERY } from "@/lib/demo";
+import { FRONTEND_DEMO_REPORT, frontendDemoRunAt } from "@/lib/demo-fixture/frontend-briefing";
 import {
   MOCK_FINAL_REPORT,
   MOCK_REPORT_SUMMARIES,
@@ -20,6 +21,9 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 export const usingMockApi = !BASE_URL;
 
 export function resolveApiUrl(url: string): string {
+  // The primary demo ships its own narration files in `public/`; they must
+  // stay on the frontend origin even when a backend base URL is configured.
+  if (url.startsWith("/demo-briefing/")) return url;
   if (!BASE_URL || /^https?:\/\//.test(url)) return url;
   return new URL(url, BASE_URL).toString();
 }
@@ -57,7 +61,7 @@ export async function createRun(query: string): Promise<Run> {
 export function createFrontendDemoRun(): Run {
   mockRunStarts.set(FRONTEND_DEMO_RUN_ID, Date.now());
   return {
-    ...mockRunAt(0),
+    ...frontendDemoRunAt(0),
     id: FRONTEND_DEMO_RUN_ID,
     query: FRONTEND_DEMO_QUERY,
   };
@@ -69,9 +73,9 @@ export async function getRun(runId: string): Promise<Run> {
     // Unknown id (e.g. after a page refresh) → replay from the beginning.
     if (startedAt === undefined) {
       mockRunStarts.set(runId, Date.now());
-      return { ...mockRunAt(0), id: runId };
+      return { ...frontendDemoRunAt(0), id: runId };
     }
-    return { ...mockRunAt(Date.now() - startedAt), id: runId };
+    return { ...frontendDemoRunAt(Date.now() - startedAt), id: runId };
   }
   return request<Run>(`/api/runs/${runId}`);
 }
@@ -82,6 +86,6 @@ export async function getReports(): Promise<ReportSummary[]> {
 }
 
 export async function getReport(runId: string): Promise<FinalReport> {
-  if (usesFrontendFixture(runId)) return { ...MOCK_FINAL_REPORT, runId };
+  if (usesFrontendFixture(runId)) return { ...FRONTEND_DEMO_REPORT, runId };
   return request<FinalReport>(`/api/reports/${runId}`);
 }

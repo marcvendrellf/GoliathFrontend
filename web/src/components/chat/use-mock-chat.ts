@@ -68,8 +68,7 @@ function eventToBlock(event: RunEvent, run?: Run): ContentBlock | null {
   if (event.type === "run.complete") {
     return {
       type: "text",
-      content:
-        "\nResearch complete. I found 3 Barcelona AI opportunities and ranked them by Goliath Score.",
+      content: `\nResearch complete. I found ${run?.opportunities.length ?? 0} Barcelona AI and deep-tech opportunities and ranked them by Goliath Score.`,
     };
   }
 

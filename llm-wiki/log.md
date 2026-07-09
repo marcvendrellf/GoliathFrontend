@@ -52,3 +52,10 @@
 - Made **Find Barcelona AI opportunities** a frontend-owned fixed demo. It
   replays `web/src/lib/mock/mock-run.ts` and opens its local report even when a
   backend base URL is configured; other prompts still use the backend.
+
+- Replaced the frontend demo's older synthetic Barcelona fixture with the
+  backend's committed `run_dump/final` **AI and deep-tech startup investment
+  opportunities** briefing. The frontend now owns the five scored
+  opportunities, six MP3 narration clips, and their word timings, so the first
+  suggested action works offline from the frontend while all other prompts keep
+  their backend path.

@@ -6,7 +6,7 @@ import { FRONTEND_DEMO_QUERY } from "@/lib/demo";
 const ACTIONS = [
   {
     id: "barcelona-ai",
-    label: "Find Barcelona AI opportunities",
+    label: "Find Barcelona AI & deep-tech opportunities",
     prompt: FRONTEND_DEMO_QUERY,
     icon: Search,
   },
