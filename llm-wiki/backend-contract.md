@@ -129,9 +129,16 @@ export type PresentationSegment = {
   subtitle: string;
   script: string;       // full spoken text — used as subtitles
   audioUrl?: string;    // ElevenLabs mp3 URL; absent → silent + subtitles
+  wordTimings?: WordTiming[]; // exact audio-aligned subtitle words
   imageUrl?: string;
   evidenceIds: string[];
   durationMs?: number;  // fallback timing when audio is missing
+};
+
+export type WordTiming = {
+  text: string;         // one displayed/spoken word; entries reconstruct script
+  startMs: number;      // offset from the start of this segment's audio clip
+  endMs: number;
 };
 
 export type ReportSummary = {
@@ -158,6 +165,10 @@ export type ReportSummary = {
   `scoreReason` for every opportunity.
 - Generate ElevenLabs audio per presentation segment and return public/
   proxied `audioUrl`s (mp3). One clip per segment, not one big file.
+- Return `wordTimings` whenever audio is generated. Generate speech with
+  timestamps or force-align the final audio with `script`; timings must be in
+  clip-relative milliseconds and the ordered `text` values must reconstruct
+  the displayed script.
 - Keep ElevenLabs/Cala secrets server-side.
 - Allow CORS from the frontend origin.
 
@@ -167,4 +178,6 @@ export type ReportSummary = {
 - Render the final report from `FinalReport`.
 - Play `PresentationSegment.audioUrl` when present; fall back to
   subtitles + `durationMs` timing when absent.
+- Reveal subtitles at each `wordTiming.startMs` during healthy audio playback;
+  fall back to proportional timing if alignment data or audio is unavailable.
 - Never call ElevenLabs or Cala directly.

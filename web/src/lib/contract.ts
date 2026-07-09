@@ -143,9 +143,16 @@ export type PresentationSegment = {
   subtitle: string;
   script: string; // full spoken text — used as subtitles
   audioUrl?: string; // ElevenLabs mp3 URL; frontend falls back to silent+subtitles
+  wordTimings?: WordTiming[]; // exact audio-aligned subtitle words; optional fallback
   imageUrl?: string; // optional supporting chart/image
   evidenceIds: string[]; // references Opportunity.evidence ids
   durationMs?: number; // fallback segment length when audio is missing
+};
+
+export type WordTiming = {
+  text: string; // one displayed/spoken word; all entries reconstruct the script
+  startMs: number; // offset from the start of this segment's audio clip
+  endMs: number;
 };
 
 export type ReportSummary = {

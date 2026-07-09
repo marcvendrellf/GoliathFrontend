@@ -33,6 +33,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [timerProgress, setTimerProgress] = useState(0); // 0..1 within current segment
+  const [usingTimer, setUsingTimer] = useState(false);
 
   const rafRef = useRef<number | null>(null);
   const pausedRef = useRef(false);
@@ -53,6 +54,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
   const advance = useCallback(() => {
     setTimerProgress(0);
+    setUsingTimer(false);
     setIndex((i) => {
       if (i >= segments.length - 1) {
         setPhase("finished");
@@ -77,6 +79,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
       const id = window.setTimeout(advance, remaining);
       timer.current = { id, startedAt, remaining, total: durationMs };
       setTimerProgress(initialProgress);
+      setUsingTimer(true);
     },
     [advance, clearTimer],
   );
@@ -90,6 +93,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   );
 
   const {
+    currentTime: audioCurrentTime,
     progress: audioProgress,
     muted,
     load: loadAudio,
@@ -189,6 +193,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   const start = () => {
     setIndex(0);
     setPaused(false);
+    setUsingTimer(false);
     setPhase("playing");
   };
 
@@ -197,6 +202,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     setIndex(0);
     setPaused(false);
     setTimerProgress(0);
+    setUsingTimer(false);
     setPhase("playing");
   };
 
@@ -362,6 +368,10 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
                   text={segment.script}
                   progress={isActive ? progress : 1}
                   active={isActive}
+                  wordTimings={segment.wordTimings}
+                  currentTimeMs={
+                    isActive && !usingTimer ? audioCurrentTime * 1000 : undefined
+                  }
                   className="text-foreground/90"
                 />
 

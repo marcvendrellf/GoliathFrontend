@@ -22,7 +22,9 @@
 - Do we have voice IDs?
 - Will backend generate audio files before the final presentation starts?
 - Where are audio files stored or served from?
-- Do we need per-word/per-sentence subtitle timing, or segment-level subtitles?
+- Decision (2026-07-09): backend returns optional `wordTimings` per
+  presentation segment (`text`, `startMs`, `endMs`) so the frontend can reveal
+  each subtitle word in sync with audio. It falls back gracefully when absent.
 
 ## Frontend implementation
 

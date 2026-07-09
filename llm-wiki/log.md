@@ -27,3 +27,6 @@
 - Created route stubs with owner annotations: `/` and `/run/[runId]` (Felipe,
   issue #1), `/reports` and `/reports/[runId]` (Marc, issues #2-#3).
 - Added issue drafts 04-06 and 08 and filed them on GitHub (#5-#8).
+- Added optional per-word ElevenLabs alignment to the shared presentation
+  contract: backend supplies clip-relative `wordTimings`; frontend reveals
+  words at their exact start time and retains the timer/progress fallback.
