@@ -136,9 +136,21 @@ export type FinalReport = {
   createdAt: string; // ISO 8601
 };
 
+export type TranscriptWord = {
+  text: string;
+  startMs: number;
+  endMs: number;
+};
+
+export type PresentationSpeaker = Pick<
+  AgentPlan,
+  "name" | "role" | "purpose"
+>;
+
 export type PresentationSegment = {
   id: string;
   agentId: string; // which AgentPlan speaks this segment
+  speaker?: PresentationSpeaker;
   title: string;
   subtitle: string;
   script: string; // full spoken text — used as subtitles
@@ -146,6 +158,7 @@ export type PresentationSegment = {
   imageUrl?: string; // optional supporting chart/image
   evidenceIds: string[]; // references Opportunity.evidence ids
   durationMs?: number; // fallback segment length when audio is missing
+  wordTimings?: TranscriptWord[]; // clip-relative timings when audio is available
 };
 
 export type ReportSummary = {

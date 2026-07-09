@@ -7,6 +7,7 @@ import {
   ScrubBarTimeLabel,
   ScrubBarTrack,
 } from "@/components/ui/scrub-bar";
+import { resolveApiUrl } from "@/lib/api";
 import type { AgentPlan, Evidence, FinalReport } from "@/lib/contract";
 import { cn } from "@/lib/utils";
 import { Pause, Play, RotateCcw, SkipForward } from "lucide-react";
@@ -150,7 +151,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     };
 
     if (currentSegment.audioUrl) {
-      const audio = new Audio(currentSegment.audioUrl);
+      const audio = new Audio(resolveApiUrl(currentSegment.audioUrl));
       audioRef.current = audio;
       audio.onended = advance;
       audio.onloadedmetadata = () => {
@@ -494,6 +495,8 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
                     text={segment.script}
                     progress={isActive ? progress : 1}
                     active={isActive}
+                    wordTimings={segment.wordTimings}
+                    durationMs={durationSec * 1000}
                     className="mt-4 text-foreground/90"
                   />
 

@@ -5,6 +5,7 @@ import type {
   OpportunityStatus,
 } from "@/lib/contract";
 import { MOCK_AGENTS } from "@/lib/mock/mock-run";
+import { agentRoleLabel } from "@/lib/goliath/agent-labels";
 
 /**
  * The FinalReport contract carries segments (each with an `agentId`) but not the
@@ -34,11 +35,12 @@ export function deriveAgents(report: FinalReport): AgentPlan[] {
     if (seen.has(seg.agentId)) continue;
     seen.add(seg.agentId);
     const meta = AGENT_META[seg.agentId];
+    const speaker = seg.speaker;
     agents.push({
       id: seg.agentId,
-      name: meta?.name ?? humanize(seg.agentId),
-      role: meta?.role ?? "Specialist",
-      purpose: meta?.purpose ?? "",
+      name: speaker?.name ?? meta?.name ?? humanize(seg.agentId),
+      role: speaker ? agentRoleLabel(speaker.role) : meta?.role ?? "Specialist",
+      purpose: speaker?.purpose ?? meta?.purpose ?? "",
       status: "pending",
     });
   }

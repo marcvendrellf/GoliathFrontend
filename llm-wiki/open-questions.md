@@ -14,21 +14,18 @@
 - Resolved 2026-07-09: Josep's backend is FastAPI/Pydantic, with an in-memory
   run/report store, polling endpoints, and an SSE endpoint. It runs locally
   without provider keys using deterministic mock data.
-- Integration work remains: add visible pacing to the mock pipeline; return
-  absolute/proxied audio URLs that the frontend can load; populate report
-  segment evidence/timing metadata; and preserve agent display metadata on the
-  report route. See the [backend audit](sources/backend-local-integration-audit-2026-07-09.md).
+- Resolved 2026-07-09: local integration now stages mock events, returns
+  speaker/evidence/timing metadata, resolves browser-playable audio URLs, and
+  has alias-correct SSE. See the [backend audit](sources/backend-local-integration-audit-2026-07-09.md).
 - What Cala API fields are available for startup/funding-round data?
 - What news/search source will backend use?
 
 ## ElevenLabs
 
 - Do we have voice IDs?
-- Backend has an ElevenLabs proxy and an in-memory audio store, but its returned
-  `/api/audio/...` URL is relative to the backend and currently cannot be
-  played by the separate frontend origin without a proxy or URL normalization.
-- Word timing is available from the backend's transcript endpoint, but not
-  populated on the report's presentation segments that the frontend consumes.
+- Backend audio URLs now use a configurable public base URL, and the frontend
+  also normalizes a relative URL defensively. Report segments now carry
+  estimated timings in mock mode and exact provider timings when TTS is used.
 
 ## Frontend implementation
 

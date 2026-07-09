@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Run, RunEvent } from "@/lib/contract";
 import { MOCK_AGENTS, MOCK_RUN } from "@/lib/mock/mock-run";
+import { agentRoleLabel } from "@/lib/goliath/agent-labels";
 import type { ChatMessage, ContentBlock } from "./types";
 
 const DEMO_QUERY =
@@ -12,6 +13,11 @@ function toolStatusFor(run?: Run) {
   if (!run || run.status === "planning_agents") return "executing";
   if (run.status === "error") return "error";
   return "success";
+}
+
+function agentDisplayName(run: Run | undefined, agentId: string): string {
+  const agent = run?.agents.find((candidate) => candidate.id === agentId);
+  return agent?.name ?? agentRoleLabel(agentId.replace(/^agent-\d+-/, ""));
 }
 
 function eventToBlock(event: RunEvent, run?: Run): ContentBlock | null {
@@ -30,7 +36,7 @@ function eventToBlock(event: RunEvent, run?: Run): ContentBlock | null {
   if (event.type === "agent.spawned" && event.agentId) {
     return {
       type: "subagent",
-      content: event.agentId,
+      content: agentDisplayName(run, event.agentId),
       spanId: event.agentId,
       endedAt: run?.agents.find((agent) => agent.id === event.agentId)?.status === "done"
         ? Date.now()
@@ -239,4 +245,3 @@ export function useMockChat({
     submit,
   };
 }
-

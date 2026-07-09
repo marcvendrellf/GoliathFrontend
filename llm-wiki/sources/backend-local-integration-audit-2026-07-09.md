@@ -12,7 +12,8 @@
 
 - macOS arm64, Python 3.13.12.
 - `python3 -m venv .venv` plus `pip install -r requirements.txt -r requirements-dev.txt`
-  completes successfully; `pytest` reports **36 passed**.
+  completes successfully; `pytest` reports **38 passed** after the integration
+  regressions were added.
 - No `.env`, LLM key, Cala key, or ElevenLabs key is necessary for the
   deterministic mock pipeline.
 - `uvicorn app.main:app --host 127.0.0.1 --port 8000` boots successfully.
@@ -42,22 +43,21 @@ currently `*`, which is sufficient for this local development topology.
 | Area | Status | Evidence / required change |
 | --- | --- | --- |
 | Core HTTP flow | Works | Core polling endpoints and JSON aliases provide `id`, agent/event data, opportunities, and report/list shapes. |
-| Mock demo choreography | Fix required | The backend mock pipeline completes in roughly a millisecond, so the frontend's 1-second polling sees the completed run and skips visible planning/spawn/research states. Add deliberate, cancellable stage delays in mock mode or consume/replay event timestamps in the frontend. |
-| Report agent labels | Fix required | Backend segment IDs such as `agent-0-market_mapper` do not match the frontend mock roster IDs. Report detail fetches only `FinalReport`, so its fallback renders a numeric name and generic `Specialist` role. Include speaker metadata with reports, use shared stable IDs, or improve the frontend adapter. |
-| Segment evidence | Fix required | Every real response segment currently has `evidenceIds: []`, so the report's evidence panel renders nothing. Associate each segment with IDs from the selected opportunities' evidence. |
-| Silent narration timing | Fix required | Report segments return `durationMs: null`; the frontend falls back to eight seconds. The backend already estimates durations in `/api/reports/{runId}/transcript`; copy that data onto the report segments or have the frontend fetch the transcript. |
-| ElevenLabs playback | Fix required when TTS is enabled | Backend assigns relative URLs such as `/api/audio/{id}`, but the frontend calls `new Audio(audioUrl)` from port 3000 and has no `/api` rewrite. Return a configurable absolute backend URL or normalize/proxy it in the frontend. |
-| Word-level timing | Follow-up | TTS timings are stored server-side and exposed by the transcript endpoint, but the report response leaves `wordTimings` empty and the frontend does not request that endpoint. It is not required for silent fallback, but is required for exact audio sync. |
-| SSE contract | Fix before use | Direct run polling uses `timestamp`; SSE currently calls `model_dump_json()` without aliases and emits `ts`. Use alias serialization so both transports return the contract field. Current frontend polling does not consume SSE. |
+| Mock demo choreography | Implemented | The deterministic pipeline uses `MOCK_EVENT_DELAY_MS` (600 ms by default), letting the polling UI render planning, each spawn, research, and synthesis. Tests set it to zero. |
+| Report agent labels | Implemented | Segments now carry `speaker` metadata, and the frontend uses it before falling back to its mock roster. |
+| Segment evidence | Implemented | Each segment now references evidence IDs from its relevant scored opportunities, so the report evidence panel renders. |
+| Silent narration timing | Implemented | Every segment carries estimated `durationMs` and `wordTimings`; provider timings replace them when TTS runs. |
+| ElevenLabs playback | Implemented | Backend audio URLs use configurable `PUBLIC_BASE_URL`; frontend resolves a relative legacy URL defensively. |
+| Word-level timing | Implemented | The frontend uses exact timings when their word count matches the report script, with proportional reveal as its fallback. |
+| SSE contract | Implemented | SSE now serializes Pydantic aliases and emits the contract field `timestamp`. |
 | Persistence | Accepted hackathon limitation | Runs, reports, and generated audio are in-memory and disappear when the backend restarts. This is compatible with the local demo but not report reuse across restarts. |
 
 ## Conclusions
 
-No secret or platform blocker prevents a working local mock demo. Add the
-frontend API-base environment variable and restart Next.js to use the cloned
-backend immediately. The four practical fixes for a polished integrated demo
-are mock pacing, report speaker metadata, populated evidence/duration fields,
-and an audio URL that resolves from the frontend origin.
+No secret or platform blocker prevents a working local mock demo. The local
+frontend API-base environment is configured and the browser-verified flow now
+goes from staged research to a populated final report. Persistence remains the
+only deliberate hackathon limitation.
 
 ## Updated project pages
 

@@ -18,6 +18,11 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export const usingMockApi = !BASE_URL;
 
+export function resolveApiUrl(url: string): string {
+  if (!BASE_URL || /^https?:\/\//.test(url)) return url;
+  return new URL(url, BASE_URL).toString();
+}
+
 // Tracks when each mock run "started" so mockRunAt can replay the timeline.
 const mockRunStarts = new Map<string, number>();
 

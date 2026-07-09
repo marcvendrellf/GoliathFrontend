@@ -34,17 +34,16 @@ Frontend polls `GET /api/runs/:runId` every 1-2 seconds while the run is not
 The backend now exists locally at sibling path `../GoliathBackend`, cloned from
 [`josep-audenis/goliath-backend`](https://github.com/josep-audenis/goliath-backend)
 at `be3bf7c`. It runs on macOS arm64/Python 3.13 without keys using its
-deterministic mock pipeline; its 36-test suite and the core HTTP endpoints pass.
+deterministic mock pipeline; its 38-test suite and the core HTTP endpoints pass.
 
 To route the existing frontend to it, set
 `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000` in `web/.env.local` and
 restart Next.js. The API's permissive development CORS allows the frontend call.
 
-The REST polling/report surface serializes the expected core fields. Before
-claiming full presentation parity, resolve the documented gaps: relative audio
-URLs, missing segment evidence/timing metadata, agent metadata in reports, and
-instant mock-run pacing. The optional SSE endpoint also serializes `ts` rather
-than the contract's `timestamp`. See the [source audit](sources/backend-local-integration-audit-2026-07-09.md).
+The integrated browser flow now verifies staged mock events, report speaker and
+evidence metadata, timing-aware subtitles, and final-report navigation. Audio
+URLs are backend-origin aware, and SSE now serializes `timestamp` consistently.
+See the [source audit](sources/backend-local-integration-audit-2026-07-09.md).
 
 ## Core Types
 
@@ -139,9 +138,21 @@ export type FinalReport = {
   createdAt: string;
 };
 
+export type TranscriptWord = {
+  text: string;
+  startMs: number;
+  endMs: number;
+};
+
+export type PresentationSpeaker = Pick<
+  AgentPlan,
+  "name" | "role" | "purpose"
+>;
+
 export type PresentationSegment = {
   id: string;
   agentId: string;      // which AgentPlan speaks this segment
+  speaker?: PresentationSpeaker;
   title: string;
   subtitle: string;
   script: string;       // full spoken text — used as subtitles
@@ -149,6 +160,7 @@ export type PresentationSegment = {
   imageUrl?: string;
   evidenceIds: string[];
   durationMs?: number;  // fallback timing when audio is missing
+  wordTimings?: TranscriptWord[];
 };
 
 export type ReportSummary = {

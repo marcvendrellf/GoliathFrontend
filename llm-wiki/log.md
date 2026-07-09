@@ -39,3 +39,8 @@
   Its Python 3.13 mock mode, tests, CORS, polling, reports, and SSE boot work;
   recorded the local setup and remaining cross-repo integration gaps in a
   source audit.
+
+- Completed the local frontend/backend integration: staged mock events, report
+  speaker/evidence/timing metadata, browser-resolvable audio URLs, and
+  alias-correct SSE. Backend tests (38) and the frontend build pass; the real
+  browser flow now reaches the populated final report.

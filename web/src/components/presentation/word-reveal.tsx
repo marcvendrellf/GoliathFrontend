@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import type { TranscriptWord } from "@/lib/contract";
 import { useMemo } from "react";
 
 /**
@@ -22,6 +23,8 @@ export function WordReveal({
   text,
   progress,
   active,
+  wordTimings,
+  durationMs,
   className,
 }: {
   text: string;
@@ -29,16 +32,23 @@ export function WordReveal({
   progress: number;
   /** True only for the section currently being narrated. */
   active: boolean;
+  wordTimings?: TranscriptWord[];
+  durationMs?: number;
   className?: string;
 }) {
   const words = useMemo(() => text.split(/\s+/).filter(Boolean), [text]);
+  const elapsedMs = progress * (durationMs ?? 0);
+  const hasUsableTimings =
+    Boolean(durationMs) && wordTimings?.length === words.length;
 
   // How many words should be lit. Completed sections show everything; the
   // active section reveals proportionally to progress. We nudge by 1 so the
   // first word lights up immediately and the last word lands slightly before
   // progress hits exactly 1 (audio/timer end), avoiding a trailing dim word.
   const revealed = active
-    ? Math.min(words.length, Math.floor(progress * words.length) + 1)
+    ? hasUsableTimings
+      ? wordTimings!.filter((word) => word.startMs <= elapsedMs).length
+      : Math.min(words.length, Math.floor(progress * words.length) + 1)
     : words.length;
 
   return (

@@ -6,6 +6,7 @@ import { Credit, Layout, Search, ShieldCheck, Workflow } from "@sim/emcn/icons";
 import { SubBlockRowView, WorkflowBlockView } from "@sim/workflow-renderer";
 import { Handle, Position, type NodeProps } from "reactflow";
 import type { AgentStatus } from "@/lib/contract";
+import { agentRoleLabel } from "@/lib/goliath/agent-labels";
 
 /**
  * Agent-node data shape consumed by `AgentNode`. Built by
@@ -132,7 +133,7 @@ export function AgentNode({ id, data }: NodeProps<AgentNodeData>) {
         onSelect={noop}
         rows={
           <>
-            <SubBlockRowView title={role} />
+            <SubBlockRowView title={agentRoleLabel(role)} />
             <div className="flex items-center gap-1.5 text-[var(--text-tertiary)] text-xs">
               {(status === "researching" || status === "speaking") && (
                 <span className="size-1.5 rounded-full bg-[var(--brand-accent)] animate-pulse" />
