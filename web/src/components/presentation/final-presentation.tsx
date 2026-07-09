@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  ScrubBarContainer,
-  ScrubBarProgress,
-  ScrubBarThumb,
-  ScrubBarTimeLabel,
-  ScrubBarTrack,
-} from "@/components/ui/scrub-bar";
 import type { AgentPlan, Evidence, FinalReport } from "@/lib/contract";
 import { cn } from "@/lib/utils";
-import { Pause, Play, RotateCcw, SkipForward } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -37,7 +29,7 @@ const STAGE_X = 48; // talking, distance from the left edge
 const WAIT_SIZE = 48; // greyed, bottom row
 const DOCK_SIZE = 36; // docked, section gutter
 
-type Phase = "idle" | "playing" | "finished";
+type Phase = "playing" | "finished";
 type OrbMode = "waiting" | "talking" | "docking" | "hidden";
 
 export function FinalPresentation({ report }: { report: FinalReport }) {
@@ -63,11 +55,9 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     return m;
   }, [segments]);
 
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [phase, setPhase] = useState<Phase>("playing");
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState(0); // 0..1 within current segment
-  const [durationSec, setDurationSec] = useState(DEFAULT_SEGMENT_MS / 1000);
 
   // Choreography state.
   const [isLarge, setIsLarge] = useState(false); // orbs fly only on lg+ screens
@@ -81,9 +71,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const pausedRef = useRef(false);
-  const durationSecRef = useRef(DEFAULT_SEGMENT_MS / 1000);
-  // Timer fallback bookkeeping (so pause/resume preserves remaining time).
+  // Timer fallback bookkeeping for segments without playable audio.
   const timer = useRef<{
     id: number;
     startedAt: number;
@@ -95,11 +83,6 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   const finaleRef = useRef<HTMLDivElement | null>(null);
 
   const currentSegment = segments[index];
-
-  const setDuration = useCallback((sec: number) => {
-    durationSecRef.current = sec;
-    setDurationSec(sec);
-  }, []);
 
   const advance = useCallback(() => {
     setIndex((i) => {
@@ -140,22 +123,17 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
     setProgress(0);
     const durationMs = currentSegment.durationMs ?? DEFAULT_SEGMENT_MS;
-    setDuration(durationMs / 1000);
 
     const startTimerFallback = (ms: number) => {
       const startedAt = Date.now();
       const id = window.setTimeout(advance, ms);
       timer.current = { id, startedAt, remaining: ms, total: ms };
-      setDuration(ms / 1000);
     };
 
     if (currentSegment.audioUrl) {
       const audio = new Audio(currentSegment.audioUrl);
       audioRef.current = audio;
       audio.onended = advance;
-      audio.onloadedmetadata = () => {
-        if (audio.duration > 0) setDuration(audio.duration);
-      };
       audio.onerror = () => {
         // Audio failed to load/play. Fall back to the silent timer.
         audioRef.current = null;
@@ -169,18 +147,15 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
       startTimerFallback(durationMs);
     }
 
-    // Progress ticker. Drives both the scrub bar and the word-by-word reveal.
-    // Frozen while paused so the reveal stops advancing.
+    // Progress ticker. Drives the word-by-word reveal.
     const tick = () => {
-      if (!pausedRef.current) {
-        const audio = audioRef.current;
-        if (audio && audio.duration > 0) {
-          setProgress(Math.min(1, audio.currentTime / audio.duration));
-        } else if (timer.current) {
-          const t = timer.current;
-          const remaining = Math.max(0, t.remaining - (Date.now() - t.startedAt));
-          setProgress(Math.min(1, (t.total - remaining) / t.total));
-        }
+      const audio = audioRef.current;
+      if (audio && audio.duration > 0) {
+        setProgress(Math.min(1, audio.currentTime / audio.duration));
+      } else if (timer.current) {
+        const t = timer.current;
+        const remaining = Math.max(0, t.remaining - (Date.now() - t.startedAt));
+        setProgress(Math.min(1, (t.total - remaining) / t.total));
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -190,28 +165,6 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     // Re-run when the active segment changes or playback (re)starts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, index]);
-
-  // Pause / resume without tearing down the current segment.
-  useEffect(() => {
-    pausedRef.current = paused;
-    if (phase !== "playing") return;
-
-    if (paused) {
-      if (audioRef.current) audioRef.current.pause();
-      if (timer.current) {
-        const t = timer.current;
-        window.clearTimeout(t.id);
-        t.remaining = Math.max(0, t.remaining - (Date.now() - t.startedAt));
-      }
-    } else {
-      if (audioRef.current) audioRef.current.play().catch(() => {});
-      if (timer.current) {
-        const t = timer.current;
-        t.startedAt = Date.now();
-        t.id = window.setTimeout(advance, t.remaining);
-      }
-    }
-  }, [paused, phase, advance]);
 
   useEffect(() => teardown, [teardown]);
 
@@ -232,12 +185,12 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   }, []);
 
   // First paint of a run keeps every orb in the waiting row; the next frame
-  // "arms" the choreography so the active agent flies out with a transition.
+  // arms the choreography so the active agent can fly out smoothly.
   useEffect(() => {
-    if (phase === "idle" || armed) return;
+    if (armed) return;
     const r = requestAnimationFrame(() => setArmed(true));
     return () => cancelAnimationFrame(r);
-  }, [phase, armed]);
+  }, [armed]);
 
   const markDocked = useCallback((i: number) => {
     setDockedSections((prev) => {
@@ -250,57 +203,17 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
   // Auto-scroll: keep the section being written (or the finale) in view.
   useEffect(() => {
-    if (phase === "idle") return;
     const el = phase === "finished" ? finaleRef.current : activeSectionRef.current;
     el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [phase, index]);
 
-  // Seek to an absolute time (seconds) within the current segment.
-  const seek = useCallback(
-    (timeSec: number) => {
-      const dur = durationSecRef.current;
-      if (dur <= 0) return;
-      const fraction = Math.min(1, Math.max(0, timeSec / dur));
-
-      const audio = audioRef.current;
-      if (audio && audio.duration > 0) {
-        audio.currentTime = fraction * audio.duration;
-      } else if (timer.current) {
-        const t = timer.current;
-        t.remaining = Math.max(0, Math.round(t.total * (1 - fraction)));
-        if (!pausedRef.current) {
-          window.clearTimeout(t.id);
-          t.startedAt = Date.now();
-          t.id = window.setTimeout(advance, t.remaining);
-        }
-      }
-      setProgress(fraction);
-    },
-    [advance],
-  );
-
-  const start = () => {
-    setIndex(0);
-    setPaused(false);
-    setArmed(false);
-    setDockedSections(new Set());
-    setPhase("playing");
-  };
-
   const replay = () => {
     teardown();
     setIndex(0);
-    setPaused(false);
     setProgress(0);
     setArmed(false);
     setDockedSections(new Set());
     setPhase("playing");
-  };
-
-  const skip = () => {
-    teardown();
-    setPaused(false);
-    advance();
   };
 
   const activeAgentId = phase === "playing" ? currentSegment?.agentId : undefined;
@@ -353,21 +266,6 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
   // Sections written so far (append-only), oldest first.
   const visibleSegments = segments.slice(0, index + 1);
-
-  if (phase === "idle") {
-    return (
-      <div className="min-h-screen w-full bg-white text-foreground">
-        <IdleView
-          title={report.title}
-          summary={report.executiveSummary}
-          onStart={start}
-          segmentCount={segments.length}
-        />
-      </div>
-    );
-  }
-
-  const elapsedSec = progress * durationSec;
 
   return (
     <div className="min-h-screen w-full bg-white text-foreground">
@@ -515,19 +413,6 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
         </div>
       </main>
 
-      {/* Floating playback dock: the single control surface. */}
-      <PlaybackDock
-        phase={phase}
-        paused={paused}
-        onToggle={() => setPaused((p) => !p)}
-        onSkip={skip}
-        onReplay={replay}
-        index={index}
-        total={segments.length}
-        elapsedSec={elapsedSec}
-        durationSec={durationSec}
-        onSeek={seek}
-      />
     </div>
   );
 }
@@ -571,21 +456,61 @@ function TravelingOrb({
   const [box, setBox] = useState({ x: 0, y: 0, size: WAIT_SIZE });
   const boxRef = useRef(box);
   boxRef.current = box;
+  const targetRef = useRef(box);
 
-  // Waiting and talking targets are viewport-fixed, so measure once per
-  // signal change and let a CSS transition carry the orb there.
+  const moveTo = useCallback((next: { x: number; y: number; size: number }) => {
+    boxRef.current = next;
+    setBox(next);
+  }, []);
+
+  const setTarget = useCallback(
+    (next: { x: number; y: number; size: number }) => {
+      targetRef.current = next;
+      if (!animate) moveTo(next);
+    },
+    [animate, moveTo],
+  );
+
+  // Waiting and talking targets are viewport-fixed, so measure once per signal
+  // change and let the shared frame loop carry the orb there.
   useLayoutEffect(() => {
     if (mode === "docking" || mode === "hidden") return;
     if (mode === "talking") {
       const size = STAGE_SIZE;
-      setBox({ x: STAGE_X, y: window.innerHeight / 2 - size / 2, size });
+      setTarget({ x: STAGE_X, y: window.innerHeight / 2 - size / 2, size });
       return;
     }
     const r = waitingSlots.current?.get(agent.id)?.getBoundingClientRect();
-    if (r && r.width > 0) setBox({ x: r.left, y: r.top, size: r.width });
+    if (r && r.width > 0) setTarget({ x: r.left, y: r.top, size: r.width });
     // Recompute whenever the resolved target changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signal]);
+
+  useEffect(() => {
+    if (!animate || mode === "docking" || mode === "hidden") return;
+    let raf = 0;
+    const step = () => {
+      const cur = boxRef.current;
+      const target = targetRef.current;
+      const next = {
+        x: lerp(cur.x, target.x, 0.18),
+        y: lerp(cur.y, target.y, 0.18),
+        size: lerp(cur.size, target.size, 0.18),
+      };
+      const settled =
+        Math.abs(next.x - target.x) < 0.5 &&
+        Math.abs(next.y - target.y) < 0.5 &&
+        Math.abs(next.size - target.size) < 0.5;
+      if (settled) {
+        moveTo(target);
+        return;
+      }
+      moveTo(next);
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [animate, mode, signal, moveTo]);
 
   // Docking chases the LIVE gutter rect frame by frame. The page is usually
   // still auto-scrolling (and images can shift layout) while the orb is in
@@ -599,20 +524,20 @@ function TravelingOrb({
       if (r && r.width > 0) {
         const cur = boxRef.current;
         const next = {
-          x: lerp(cur.x, r.left, 0.16),
-          y: lerp(cur.y, r.top, 0.16),
-          size: lerp(cur.size, r.width, 0.16),
+          x: lerp(cur.x, r.left, 0.14),
+          y: lerp(cur.y, r.top, 0.14),
+          size: lerp(cur.size, r.width, 0.14),
         };
         const settled =
           Math.abs(next.x - r.left) < 0.5 &&
           Math.abs(next.y - r.top) < 0.5 &&
           Math.abs(next.size - r.width) < 0.5;
         if (settled) {
-          setBox({ x: r.left, y: r.top, size: r.width });
+          moveTo({ x: r.left, y: r.top, size: r.width });
           onDocked(dockIndex);
           return;
         }
-        setBox(next);
+        moveTo(next);
       }
       raf = requestAnimationFrame(step);
     };
@@ -626,10 +551,7 @@ function TravelingOrb({
   const scale = box.size / STAGE_SIZE;
   const agentState = mode === "talking" ? "talking" : null;
   const ease = "cubic-bezier(0.22, 1, 0.36, 1)";
-  const transition =
-    !animate || mode === "docking"
-      ? "opacity 400ms ease, filter 500ms ease"
-      : `transform 700ms ${ease}, opacity 400ms ease, filter 500ms ease`;
+  const transition = "opacity 400ms ease, filter 500ms ease";
 
   return (
     <>
@@ -659,7 +581,7 @@ function TravelingOrb({
         style={{
           transform: `translate(${box.x + box.size / 2}px, ${box.y + box.size + 10}px)`,
           opacity: mode === "talking" ? 1 : 0,
-          transition,
+          transition: `opacity 300ms ease, transform 80ms ${ease}`,
         }}
       >
         <div className="w-max -translate-x-1/2 text-center">
@@ -668,137 +590,5 @@ function TravelingOrb({
         </div>
       </div>
     </>
-  );
-}
-
-/**
- * Floating, centered playback dock, fixed at the bottom of the viewport.
- * White pill with a #dedede hairline. Composes the ElevenLabs scrub bar and
- * drives play/pause, skip, replay, and seek for both audio and timer segments.
- */
-function PlaybackDock({
-  phase,
-  paused,
-  onToggle,
-  onSkip,
-  onReplay,
-  index,
-  total,
-  elapsedSec,
-  durationSec,
-  onSeek,
-}: {
-  phase: Phase;
-  paused: boolean;
-  onToggle: () => void;
-  onSkip: () => void;
-  onReplay: () => void;
-  index: number;
-  total: number;
-  elapsedSec: number;
-  durationSec: number;
-  onSeek: (time: number) => void;
-}) {
-  const playing = phase === "playing";
-  const isLast = index >= total - 1;
-
-  return (
-    <div className="fixed bottom-6 right-6 z-50">
-      <div className="flex w-[min(92vw,480px)] items-center gap-3 rounded-xl border border-[#dedede] bg-white px-3 py-2 shadow-sm">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={onToggle}
-            disabled={!playing}
-            aria-label={paused ? "Resume" : "Pause"}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-[#1d1d1d] text-white transition-colors hover:bg-[#333333] disabled:pointer-events-none disabled:opacity-50"
-          >
-            {paused || !playing ? (
-              <Play className="size-4" />
-            ) : (
-              <Pause className="size-4" />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={onSkip}
-            disabled={!playing}
-            aria-label={isLast ? "Finish briefing" : "Skip to next segment"}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[#f2f2f2] hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
-          >
-            <SkipForward className="size-4" />
-          </button>
-          <button
-            type="button"
-            onClick={onReplay}
-            aria-label="Replay from the start"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[#f2f2f2] hover:text-foreground"
-          >
-            <RotateCcw className="size-4" />
-          </button>
-        </div>
-
-        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-          Segment {Math.min(index + 1, total)} / {total}
-        </span>
-
-        <ScrubBarContainer
-          duration={durationSec}
-          value={elapsedSec}
-          onScrub={onSeek}
-          className="flex-1 items-center gap-2"
-        >
-          <ScrubBarTimeLabel
-            time={elapsedSec}
-            className="shrink-0 text-[11px] text-muted-foreground"
-          />
-          <ScrubBarTrack className="bg-[#ededed]">
-            <ScrubBarProgress className="inset-0 h-full w-full [&_[data-slot=progress-indicator]]:bg-[#1d1d1d] [&_[data-slot=progress-track]]:h-full [&_[data-slot=progress-track]]:bg-transparent" />
-            <ScrubBarThumb className="bg-[#1d1d1d]" />
-          </ScrubBarTrack>
-          <ScrubBarTimeLabel
-            time={durationSec}
-            className="shrink-0 text-[11px] text-muted-foreground"
-          />
-        </ScrubBarContainer>
-      </div>
-    </div>
-  );
-}
-
-function IdleView({
-  title,
-  summary,
-  onStart,
-  segmentCount,
-}: {
-  title: string;
-  summary: string;
-  onStart: () => void;
-  segmentCount: number;
-}) {
-  return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-6 px-6 py-10 text-center">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-        Goliath · Investor briefing
-      </p>
-      <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-        {title}
-      </h1>
-      <p className="max-w-xl text-base leading-relaxed text-muted-foreground">
-        {summary}
-      </p>
-      <button
-        type="button"
-        onClick={onStart}
-        className="inline-flex h-10 items-center gap-2 rounded-md bg-[#1d1d1d] px-6 text-sm font-medium text-white transition-colors hover:bg-[#333333]"
-      >
-        <Play className="size-4" />
-        Start briefing
-      </button>
-      <p className="text-xs text-muted-foreground/70">
-        {segmentCount} segments, narrated with subtitles
-      </p>
-    </div>
   );
 }

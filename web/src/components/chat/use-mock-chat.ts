@@ -106,7 +106,6 @@ function blocksFromRun(run?: Run): ContentBlock[] {
       type: "options",
       options: [
         { id: `/reports/${run.id}`, label: "Open final report" },
-        { id: DEMO_QUERY, label: "Replay the demo run" },
       ],
     });
   }
