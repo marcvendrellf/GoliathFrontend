@@ -24,7 +24,6 @@ const DEFAULT_SEGMENT_MS = 8000;
 // Orb choreography sizes (px). Base canvas is rendered at STAGE_SIZE and scaled
 // down for the waiting row and the docked gutter marker.
 const STAGE_SIZE = 160; // talking, mid-left
-const STAGE_X = 48; // talking, distance from the left edge
 const WAIT_SIZE = 72; // greyed, bottom row
 const DOCK_SIZE = 36; // docked, section gutter
 
@@ -273,15 +272,16 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     <div className="min-h-screen w-full bg-white text-foreground">
       {/* Waiting row: compact pending agents only. The visible orbs are the
           fixed traveling elements below; names live here in the slots. */}
-      {isLarge && (
-        <div className="fixed bottom-8 left-10 z-20 flex items-start gap-4">
+      {isLarge && waitingAgents.length > 0 && (
+        <div className="fixed bottom-14 left-16 z-20 flex items-start gap-8">
           {waitingAgents.map((agent) => {
             return (
               <div
                 key={agent.id}
-                className="flex w-28 flex-col items-center gap-2"
+                className="flex w-32 flex-col items-center gap-2"
               >
                 <div
+                  className="mx-auto"
                   ref={(el) => {
                     if (el) waitingSlotRefs.current.set(agent.id, el);
                     else waitingSlotRefs.current.delete(agent.id);
@@ -313,6 +313,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
               mode={mode}
               dockIndex={dockIndex}
               animate={armed}
+              activeSection={activeSectionRef}
               waitingSlots={waitingSlotRefs}
               gutters={gutterRefs}
               onDocked={markDocked}
@@ -434,6 +435,7 @@ function TravelingOrb({
   mode,
   dockIndex,
   animate,
+  activeSection,
   waitingSlots,
   gutters,
   onDocked,
@@ -445,6 +447,7 @@ function TravelingOrb({
   mode: OrbMode;
   dockIndex: number;
   animate: boolean;
+  activeSection: React.RefObject<HTMLElement | null>;
   waitingSlots: React.RefObject<Map<string, HTMLElement>>;
   gutters: React.RefObject<Map<number, HTMLElement>>;
   onDocked: (i: number) => void;
@@ -468,17 +471,44 @@ function TravelingOrb({
     [animate, moveTo],
   );
 
-  // Waiting and talking targets are viewport-fixed, so measure once per signal
-  // change and let the shared frame loop carry the orb there.
+  const targetFromRect = useCallback(
+    (rect: DOMRect, size = rect.width) => ({
+      x: rect.left + rect.width / 2 - size / 2,
+      y: rect.top + rect.height / 2 - size / 2,
+      size,
+    }),
+    [],
+  );
+
+  const talkingTarget = useCallback(() => {
+    const section = activeSection.current?.getBoundingClientRect();
+    if (!section || section.width <= 0) {
+      return {
+        x: Math.max(48, (window.innerWidth - 768) / 4) - STAGE_SIZE / 2,
+        y: window.innerHeight / 2 - STAGE_SIZE / 2,
+        size: STAGE_SIZE,
+      };
+    }
+
+    const centerX = Math.max(STAGE_SIZE / 2 + 32, section.left / 2);
+    const centerY = section.top + Math.min(section.height * 0.45, 220);
+    return {
+      x: centerX - STAGE_SIZE / 2,
+      y: Math.max(96, centerY - STAGE_SIZE / 2),
+      size: STAGE_SIZE,
+    };
+  }, [activeSection]);
+
+  // Waiting and talking targets are viewport-fixed center anchors, so measure
+  // once per signal change and let the shared frame loop carry the orb there.
   useLayoutEffect(() => {
     if (mode === "docking" || mode === "hidden") return;
     if (mode === "talking") {
-      const size = STAGE_SIZE;
-      setTarget({ x: STAGE_X, y: window.innerHeight / 2 - size / 2, size });
+      setTarget(talkingTarget());
       return;
     }
     const r = waitingSlots.current?.get(agent.id)?.getBoundingClientRect();
-    if (r && r.width > 0) setTarget({ x: r.left, y: r.top, size: r.width });
+    if (r && r.width > 0) setTarget(targetFromRect(r, WAIT_SIZE));
     // Recompute whenever the resolved target changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signal]);
@@ -519,18 +549,19 @@ function TravelingOrb({
     const step = () => {
       const r = gutters.current?.get(dockIndex)?.getBoundingClientRect();
       if (r && r.width > 0) {
+        const target = targetFromRect(r, r.width);
         const cur = boxRef.current;
         const next = {
-          x: lerp(cur.x, r.left, 0.14),
-          y: lerp(cur.y, r.top, 0.14),
-          size: lerp(cur.size, r.width, 0.14),
+          x: lerp(cur.x, target.x, 0.14),
+          y: lerp(cur.y, target.y, 0.14),
+          size: lerp(cur.size, target.size, 0.14),
         };
         const settled =
-          Math.abs(next.x - r.left) < 0.5 &&
-          Math.abs(next.y - r.top) < 0.5 &&
-          Math.abs(next.size - r.width) < 0.5;
+          Math.abs(next.x - target.x) < 0.5 &&
+          Math.abs(next.y - target.y) < 0.5 &&
+          Math.abs(next.size - target.size) < 0.5;
         if (settled) {
-          moveTo({ x: r.left, y: r.top, size: r.width });
+          moveTo(target);
           onDocked(dockIndex);
           return;
         }
