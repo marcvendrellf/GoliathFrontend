@@ -17,10 +17,11 @@ export function ChatPanel({
   onSubmitQuery: (query: string) => Promise<Run>;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const { isSending, messages, reset, stop, submit } = useMockChat({
+  const { isSending, messages, stop, submit } = useMockChat({
     run,
     onSubmitQuery,
   });
+  const hasMessages = messages.length > 0;
 
   useEffect(() => {
     const node = scrollerRef.current;
@@ -28,24 +29,35 @@ export function ChatPanel({
     node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  if (!hasMessages) {
+    return (
+      <div className="relative h-full overflow-y-auto bg-[var(--bg)] [scrollbar-gutter:stable_both-edges]">
+        <div className="absolute top-[8.5px] right-[16px] z-10 flex items-center gap-1.5 text-[var(--text-body)] text-small">
+          <span className="flex size-5 items-center justify-center rounded-full border border-[var(--border-1)] text-[11px]">
+            ◎
+          </span>
+          <span>476</span>
+        </div>
+        <div className="flex min-h-full flex-col items-center justify-center px-6 pt-[2vh] pb-[22vh]">
+          <h1 className="mb-7 max-w-[48rem] text-balance font-season text-[30px] text-[var(--text-primary)]">
+            What should we find, Felipe?
+          </h1>
+          <div className="relative w-full max-w-[48rem]">
+            <UserInput
+              variant="home"
+              isSending={isSending}
+              onSubmit={submit}
+              onStopGeneration={stop}
+            />
+            <SuggestedActions onSelectPrompt={submit} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-[var(--bg)]">
-      <div className="flex shrink-0 items-center justify-between border-[var(--border)] border-b px-6 py-3">
-        <div>
-          <h1 className="font-medium text-[var(--text-primary)] text-base">Goliath Copilot</h1>
-          <p className="text-[var(--text-muted)] text-small">
-            VC research team, assembled on demand
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={reset}
-          className="rounded-[6px] px-2 py-1 text-[var(--text-secondary)] text-small transition-colors hover-hover:bg-[var(--surface-4)]"
-        >
-          New chat
-        </button>
-      </div>
-
       <div
         ref={scrollerRef}
         className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 pt-4 pb-8 [scrollbar-gutter:stable_both-edges]"
@@ -88,11 +100,9 @@ export function ChatPanel({
 
       <div className="flex-shrink-0 px-[24px] pb-[16px]">
         <div className="mx-auto flex max-w-[48rem] flex-col gap-3">
-          {!run && <SuggestedActions onSelectPrompt={submit} />}
           <UserInput isSending={isSending} onSubmit={submit} onStopGeneration={stop} />
         </div>
       </div>
     </div>
   );
 }
-

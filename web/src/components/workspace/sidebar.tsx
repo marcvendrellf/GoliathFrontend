@@ -1,25 +1,18 @@
 "use client";
 
 /**
- * Goliath workspace sidebar — reproduces Sim's sidebar structure using its real
+ * Goliath workspace sidebar, reproducing Sim's sidebar structure using its real
  * emcn primitives (Chip / ChipLink), driven by static Goliath data. Decorative:
  * only "New chat" is wired (resets the conversation).
  */
 import { Chip } from "@sim/emcn";
-import { PanelLeft } from "@sim/emcn/icons";
+import { PanelLeft, Plus } from "@sim/emcn/icons";
 import {
+  FOOTER_NAV,
   PRIMARY_NAV,
-  THREADS,
+  WORKFLOWS,
   type NavItem,
 } from "@/lib/goliath/nav-data";
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="px-2 pt-4 pb-1 font-medium text-[var(--text-subtle)] text-xs">
-      {children}
-    </div>
-  );
-}
 
 function NavRow({
   item,
@@ -82,9 +75,16 @@ export function Sidebar({
 
       {/* Scrollable middle */}
       <div className="mt-1 min-h-0 flex-1 overflow-y-auto px-2">
-        <SectionLabel>Chats</SectionLabel>
+        <div className="flex items-center justify-between px-2 pt-4 pb-1">
+          <span className="font-medium text-[var(--text-subtle)] text-xs">
+            Workflows
+          </span>
+          <div className="flex items-center gap-1 text-[var(--text-icon)]">
+            <Plus className="size-3.5" />
+          </div>
+        </div>
         <div className="flex flex-col gap-0.5 pb-2">
-          {THREADS.map((thread) => (
+          {WORKFLOWS.map((thread) => (
             <Chip key={thread.id} active={thread.id === activeThreadId} fullWidth>
               <span className="flex-1 truncate text-left">{thread.title}</span>
             </Chip>
@@ -93,13 +93,10 @@ export function Sidebar({
       </div>
 
       {/* Footer */}
-      <div className="flex flex-col gap-0.5 border-[var(--border)] border-t px-2 py-2">
-        <Chip fullWidth>
-          <span className="flex-1 truncate text-left">Settings</span>
-        </Chip>
-        <Chip fullWidth>
-          <span className="flex-1 truncate text-left">Help</span>
-        </Chip>
+      <div className="flex flex-col gap-0.5 px-2 py-2">
+        {FOOTER_NAV.map((item) => (
+          <NavRow key={item.id} item={item} />
+        ))}
       </div>
     </div>
   );

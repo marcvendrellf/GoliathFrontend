@@ -1,6 +1,6 @@
 /**
  * Route: /reports
- * Owner: Marc — GitHub issue #3 (report list).
+ * Owner: Marc. GitHub issue #3 (report list).
  *
  * Build here: api.getReports() → report cards (query, timestamp, status, top
  * opportunities with Goliath Score). Link each card to /reports/[runId].

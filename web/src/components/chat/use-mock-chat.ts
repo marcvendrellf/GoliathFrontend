@@ -121,27 +121,7 @@ function blocksFromRun(run?: Run): ContentBlock[] {
 }
 
 function seedMessages(): ChatMessage[] {
-  return [
-    {
-      id: "assistant-seed",
-      role: "assistant",
-      content: "",
-      contentBlocks: [
-        {
-          type: "text",
-          content:
-            "Tell me the market, geography, and stage you care about. I’ll spin up the right research agents and keep the work visible.",
-        },
-        {
-          type: "options",
-          options: [
-            { id: DEMO_QUERY, label: "Barcelona AI opportunities" },
-            { id: "Find seed-stage AI infrastructure startups in Spain.", label: "Spain AI infra" },
-          ],
-        },
-      ],
-    },
-  ];
+  return [];
 }
 
 export function useMockChat({
@@ -165,10 +145,15 @@ export function useMockChat({
         contentBlocks: blocksFromRun(run),
       };
       const existingIndex = current.findIndex((message) => message.id === assistant.id);
-      if (existingIndex === -1) return [...current, assistant];
+      const startingIndex = current.findIndex((message) => message.id === "assistant-starting");
+      if (existingIndex === -1 && startingIndex === -1) return [...current, assistant];
       const next = [...current];
-      next[existingIndex] = assistant;
-      return next;
+      next[existingIndex === -1 ? startingIndex : existingIndex] = assistant;
+      return next.filter(
+        (message, index) =>
+          message.id !== "assistant-starting" &&
+          (message.id !== assistant.id || index === next.findIndex((item) => item.id === assistant.id)),
+      );
     });
     setIsSending(run.status !== "complete" && run.status !== "error");
   }, [lastQuery, run]);
@@ -195,31 +180,14 @@ export function useMockChat({
         content: "",
         contentBlocks: [
           {
-            type: "tool_call",
-            toolCall: {
-              id: "planning",
-              name: "plan_agents",
-              displayTitle: "Planning specialist agents",
-              status: "executing",
-            },
+            type: "thinking",
+            content: "Planning specialist agents",
           },
         ],
       },
     ]);
 
-    const created = await onSubmitQuery(query);
-    setMessages((current) =>
-      current.map((message) =>
-        message.id === "assistant-starting"
-          ? {
-              id: `assistant-${created.id}`,
-              role: "assistant",
-              content: "",
-              contentBlocks: blocksFromRun(created),
-            }
-          : message,
-      ),
-    );
+    await onSubmitQuery(query);
   }
 
   function stop() {

@@ -3,7 +3,7 @@ import "./globals.css";
 import "reactflow/dist/style.css";
 
 export const metadata: Metadata = {
-  title: "Goliath — VC research, assembled on demand",
+  title: "Goliath | VC research, assembled on demand",
   description:
     "Ask a VC research question and watch Goliath assemble a tailored team of AI agents.",
 };

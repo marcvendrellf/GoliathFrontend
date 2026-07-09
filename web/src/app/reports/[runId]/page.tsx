@@ -1,6 +1,6 @@
 /**
  * Route: /reports/[runId]
- * Owner: Marc — GitHub issue #2 (narrated presentation).
+ * Owner: Marc. GitHub issue #2 (narrated presentation).
  *
  * Fetches the FinalReport via api.getReport(runId) (mock-backed when no
  * backend is configured) and hands it to the client FinalPresentation, which

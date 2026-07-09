@@ -3,7 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 /**
- * Workspace shell — adapted from Sim's workspace-chrome. Sidebar rail on the
+ * Workspace shell adapted from Sim's workspace-chrome. Sidebar rail on the
  * left; the routed content sits in Sim's signature rounded, bordered frame.
  * Fixed sidebar width (no collapse for the hackathon).
  */
