@@ -560,9 +560,11 @@ function TravelingOrb({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, dockIndex]);
 
-  // The orb canvas is rendered at STAGE_SIZE and scaled, never resized, so the
-  // flight is a pure composited transform (no WebGL canvas re-layout jank).
-  const scale = box.size / STAGE_SIZE;
+  // The speaker orb must always render at full stage scale. Only waiting and
+  // docking states visually shrink, so the handoff cannot land half-sized in
+  // the fixed speaker slot.
+  const visualSize = mode === "talking" ? STAGE_SIZE : box.size;
+  const scale = visualSize / STAGE_SIZE;
   const agentState = mode === "talking" ? "talking" : null;
   const ease = "cubic-bezier(0.22, 1, 0.36, 1)";
   const transition = "opacity 400ms ease, filter 500ms ease";
@@ -602,7 +604,7 @@ function TravelingOrb({
       <div
         className="pointer-events-none fixed left-0 top-0 z-30"
         style={{
-          transform: `translate(${box.cx}px, ${box.cy + box.size / 2 + 10}px)`,
+          transform: `translate(${box.cx}px, ${box.cy + visualSize / 2 + 10}px)`,
           opacity: mode === "talking" ? 1 : 0,
           transition: `opacity 300ms ease, transform 80ms ${ease}`,
         }}
