@@ -1,7 +1,6 @@
 "use client";
 
 import type { AgentPlan, Evidence, FinalReport } from "@/lib/contract";
-import { cn } from "@/lib/utils";
 import {
   useCallback,
   useEffect,
@@ -26,7 +25,7 @@ const DEFAULT_SEGMENT_MS = 8000;
 // down for the waiting row and the docked gutter marker.
 const STAGE_SIZE = 160; // talking, mid-left
 const STAGE_X = 48; // talking, distance from the left edge
-const WAIT_SIZE = 48; // greyed, bottom row
+const WAIT_SIZE = 72; // greyed, bottom row
 const DOCK_SIZE = 36; // docked, section gutter
 
 type Phase = "playing" | "finished";
@@ -266,20 +265,21 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
   // Sections written so far (append-only), oldest first.
   const visibleSegments = segments.slice(0, index + 1);
+  const waitingAgents = agents.filter(
+    (agent) => orbModeFor(agent).mode === "waiting",
+  );
 
   return (
     <div className="min-h-screen w-full bg-white text-foreground">
-      {/* Waiting row: greyed anchors at the bottom-left. Fixed-width slots so
-          orbs and names line up cleanly. The visible orbs are the fixed
-          traveling elements below, names live here in the slots. */}
+      {/* Waiting row: compact pending agents only. The visible orbs are the
+          fixed traveling elements below; names live here in the slots. */}
       {isLarge && (
-        <div className="fixed bottom-10 left-6 z-20 flex items-start gap-2">
-          {agents.map((agent) => {
-            const waiting = orbModeFor(agent).mode === "waiting";
+        <div className="fixed bottom-8 left-10 z-20 flex items-start gap-4">
+          {waitingAgents.map((agent) => {
             return (
               <div
                 key={agent.id}
-                className="flex w-20 flex-col items-center gap-1.5"
+                className="flex w-28 flex-col items-center gap-2"
               >
                 <div
                   ref={(el) => {
@@ -289,10 +289,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
                   style={{ width: WAIT_SIZE, height: WAIT_SIZE }}
                 />
                 <span
-                  className={cn(
-                    "w-full truncate text-center text-[10px] font-medium text-muted-foreground transition-opacity duration-300",
-                    !waiting && "opacity-0",
-                  )}
+                  className="w-full truncate text-center text-[11px] font-medium text-muted-foreground"
                 >
                   {agent.name}
                 </span>
