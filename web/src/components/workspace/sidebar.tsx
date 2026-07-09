@@ -6,7 +6,7 @@
  * only "New chat" is wired (resets the conversation).
  */
 import { Chip } from "@sim/emcn";
-import { ChevronDown, MoreHorizontal, PanelLeft, Plus } from "@sim/emcn/icons";
+import { PanelLeft, Plus } from "@sim/emcn/icons";
 import {
   FOOTER_NAV,
   PRIMARY_NAV,
@@ -47,14 +47,11 @@ export function Sidebar({
         <div className="flex items-center gap-2 px-1">
           <span
             aria-hidden
-            className="flex size-5 items-center justify-center rounded-[6px] bg-[#ff5b66] font-medium text-[11px] text-white"
-          >
-            F
-          </span>
+            className="size-4 rounded-[5px] bg-[var(--brand-agent)]"
+          />
           <span className="font-semibold text-[var(--text-primary)] text-small">
-            Felipe&apos;s Workspace
+            Goliath
           </span>
-          <ChevronDown className="size-3.5 text-[var(--text-icon)]" />
         </div>
         <button
           type="button"
@@ -83,7 +80,6 @@ export function Sidebar({
             Workflows
           </span>
           <div className="flex items-center gap-1 text-[var(--text-icon)]">
-            <MoreHorizontal className="size-3.5" />
             <Plus className="size-3.5" />
           </div>
         </div>
