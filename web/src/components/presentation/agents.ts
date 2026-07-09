@@ -54,13 +54,13 @@ export function buildEvidenceMap(report: FinalReport): Map<string, Evidence> {
   return map;
 }
 
-/** Tailwind classes for an opportunity status badge. */
+/** Tailwind classes for an opportunity status badge (light theme). */
 export const STATUS_BADGE: Record<OpportunityStatus, string> = {
-  hot: "border-red-500/40 bg-red-500/15 text-red-300",
-  warming: "border-amber-500/40 bg-amber-500/15 text-amber-300",
-  neutral: "border-slate-500/40 bg-slate-500/15 text-slate-300",
-  cooling: "border-sky-500/40 bg-sky-500/15 text-sky-300",
-  not_hot: "border-slate-600/40 bg-slate-600/15 text-slate-400",
+  hot: "border-red-200 bg-red-50 text-red-700",
+  warming: "border-amber-200 bg-amber-50 text-amber-700",
+  neutral: "border-slate-200 bg-slate-50 text-slate-600",
+  cooling: "border-sky-200 bg-sky-50 text-sky-700",
+  not_hot: "border-slate-200 bg-slate-50 text-slate-500",
 };
 
 export const STATUS_LABEL: Record<OpportunityStatus, string> = {

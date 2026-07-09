@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildEvidenceMap, deriveAgents } from "./agents";
 import { EvidencePanel } from "./evidence-panel";
 import { Finale } from "./finale";
+import { WordReveal } from "./word-reveal";
 
 const DEFAULT_SEGMENT_MS = 8000;
 
@@ -18,6 +19,15 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   const evidenceMap = useMemo(() => buildEvidenceMap(report), [report]);
   const segments = report.segments;
 
+  /** First segment index at which each agent speaks — drives orb entrance. */
+  const firstSpeakAt = useMemo(() => {
+    const m = new Map<string, number>();
+    segments.forEach((s, i) => {
+      if (!m.has(s.agentId)) m.set(s.agentId, i);
+    });
+    return m;
+  }, [segments]);
+
   const [phase, setPhase] = useState<Phase>("idle");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -25,10 +35,17 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rafRef = useRef<number | null>(null);
+  const pausedRef = useRef(false);
   // Timer fallback bookkeeping (so pause/resume preserves remaining time).
-  const timer = useRef<{ id: number; startedAt: number; remaining: number } | null>(
-    null,
-  );
+  const timer = useRef<{
+    id: number;
+    startedAt: number;
+    remaining: number;
+    total: number;
+  } | null>(null);
+
+  const activeSectionRef = useRef<HTMLElement | null>(null);
+  const finaleRef = useRef<HTMLDivElement | null>(null);
 
   const currentSegment = segments[index];
 
@@ -74,7 +91,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     const startTimerFallback = (ms: number) => {
       const startedAt = Date.now();
       const id = window.setTimeout(advance, ms);
-      timer.current = { id, startedAt, remaining: ms };
+      timer.current = { id, startedAt, remaining: ms, total: ms };
     };
 
     if (currentSegment.audioUrl) {
@@ -94,16 +111,18 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
       startTimerFallback(durationMs);
     }
 
-    // Progress ticker for the per-segment bar.
+    // Progress ticker. Drives both the header bar and the word-by-word reveal.
+    // Frozen while paused so the reveal stops advancing.
     const tick = () => {
-      const audio = audioRef.current;
-      if (audio && audio.duration > 0) {
-        setProgress(Math.min(1, audio.currentTime / audio.duration));
-      } else if (timer.current) {
-        const t = timer.current;
-        const elapsed = t.startedAt ? Date.now() - t.startedAt : 0;
-        const total = durationMs;
-        setProgress(Math.min(1, (total - t.remaining + elapsed) / total));
+      if (!pausedRef.current) {
+        const audio = audioRef.current;
+        if (audio && audio.duration > 0) {
+          setProgress(Math.min(1, audio.currentTime / audio.duration));
+        } else if (timer.current) {
+          const t = timer.current;
+          const remaining = Math.max(0, t.remaining - (Date.now() - t.startedAt));
+          setProgress(Math.min(1, (t.total - remaining) / t.total));
+        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -116,6 +135,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
   // Pause / resume without tearing down the current segment.
   useEffect(() => {
+    pausedRef.current = paused;
     if (phase !== "playing") return;
 
     if (paused) {
@@ -136,6 +156,13 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   }, [paused, phase, advance]);
 
   useEffect(() => teardown, [teardown]);
+
+  // Auto-scroll: keep the section being written (or the finale) in view.
+  useEffect(() => {
+    if (phase === "idle") return;
+    const el = phase === "finished" ? finaleRef.current : activeSectionRef.current;
+    el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [phase, index]);
 
   const start = () => {
     setIndex(0);
@@ -159,147 +186,217 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
   const activeAgentId = phase === "playing" ? currentSegment?.agentId : undefined;
 
-  const stageAgents: AgentPlan[] = agents.map((a) => ({
-    ...a,
-    status:
-      phase === "finished"
-        ? "done"
-        : a.id === activeAgentId
-          ? "speaking"
-          : "pending",
-  }));
+  // Orbs that have entered the stage: any agent whose first segment has started.
+  const enteredAgents: AgentPlan[] =
+    phase === "idle"
+      ? []
+      : agents.filter((a) => (firstSpeakAt.get(a.id) ?? Infinity) <= index);
 
-  const speakingAgent = agents.find((a) => a.id === activeAgentId);
-
-  const segmentEvidence: Evidence[] =
-    currentSegment?.evidenceIds
+  const evidenceFor = (segment: (typeof segments)[number]): Evidence[] =>
+    segment.evidenceIds
       .map((id) => evidenceMap.get(id))
-      .filter((e): e is Evidence => Boolean(e)) ?? [];
+      .filter((e): e is Evidence => Boolean(e));
+
+  // Sections written so far (append-only), oldest first.
+  const visibleSegments = segments.slice(0, index + 1);
+
+  if (phase === "idle") {
+    return (
+      <div className="min-h-screen w-full bg-background text-foreground">
+        <IdleView
+          title={report.title}
+          summary={report.executiveSummary}
+          onStart={start}
+          segmentCount={segments.length}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="dark relative min-h-screen w-full overflow-hidden bg-neutral-950 text-white">
-      {/* Ambient backdrop */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(56,64,120,0.25),transparent_60%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(20,40,60,0.2),transparent_55%)]" />
+    <div className="min-h-screen w-full bg-background text-foreground">
+      {/* Sticky header band: orb stage + transport controls */}
+      <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
+        <div className="mx-auto w-full max-w-3xl px-6 py-4">
+          <div className="flex min-h-[92px] items-end justify-center gap-8">
+            {enteredAgents.map((agent) => {
+              const orbIndex = agents.indexOf(agent);
+              return (
+                <StageOrb
+                  key={agent.id}
+                  agent={{
+                    ...agent,
+                    status: agent.id === activeAgentId ? "speaking" : "done",
+                  }}
+                  orbIndex={orbIndex}
+                  direction={orbIndex % 2 === 0 ? "left" : "right"}
+                  active={agent.id === activeAgentId}
+                />
+              );
+            })}
+          </div>
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
-        {phase === "finished" ? (
-          <Finale
-            title={report.title}
-            opportunities={report.opportunities}
-            onReplay={replay}
-          />
-        ) : (
-          <>
-            {/* Stage: agent orbs */}
-            <div className="flex flex-wrap items-end justify-center gap-6 pt-4 sm:gap-10">
-              {stageAgents.map((agent, i) => {
-                const isActive = agent.id === activeAgentId;
-                return (
-                  <div
-                    key={agent.id}
-                    className={cn(
-                      "transition-all duration-500 ease-out",
-                      isActive
-                        ? "scale-110 opacity-100 drop-shadow-[0_0_35px_rgba(129,140,248,0.45)]"
-                        : "scale-90 opacity-40",
-                    )}
+          <div className="mt-4 flex items-center gap-4">
+            {phase === "playing" ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaused((p) => !p)}
+                    className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
                   >
-                    <AgentOrb agent={agent} index={i} size="md" />
+                    {paused ? (
+                      <>
+                        <Play className="size-4" /> Resume
+                      </>
+                    ) : (
+                      <>
+                        <Pause className="size-4" /> Pause
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={skip}
+                    className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+                  >
+                    <SkipForward className="size-4" />
+                    {index >= segments.length - 1 ? "Finish" : "Skip"}
+                  </button>
+                </div>
+                <div className="flex flex-1 items-center gap-3">
+                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-150 ease-linear"
+                      style={{ width: `${progress * 100}%` }}
+                    />
                   </div>
-                );
-              })}
-            </div>
-
-            {phase === "idle" ? (
-              <IdleView
-                title={report.title}
-                summary={report.executiveSummary}
-                onStart={start}
-                segmentCount={segments.length}
-              />
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    Segment {index + 1} / {segments.length}
+                  </span>
+                </div>
+              </>
             ) : (
-              <div className="mt-8 flex flex-1 flex-col gap-6 lg:flex-row">
-                {/* Main narration column */}
-                <div className="flex flex-1 flex-col">
-                  {speakingAgent && (
-                    <div className="mb-3 flex items-center gap-2 text-sm">
-                      <span className="font-semibold text-white">
-                        {speakingAgent.name}
-                      </span>
-                      <span className="text-white/40">·</span>
-                      <span className="text-white/50">{speakingAgent.role}</span>
-                    </div>
-                  )}
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Briefing complete
+              </span>
+            )}
+          </div>
+        </div>
+      </header>
 
-                  <h2 className="text-2xl font-semibold leading-tight text-white sm:text-3xl">
-                    {currentSegment?.title}
-                  </h2>
-                  <p className="mt-1 text-sm text-white/50">
-                    {currentSegment?.subtitle}
+      {/* The report: sections accumulate top-to-bottom as agents speak. */}
+      <main className="mx-auto w-full max-w-3xl px-6 pb-40 pt-8">
+        <div className="mb-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Goliath · Investor briefing
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            {report.title}
+          </h1>
+        </div>
+
+        <div className="flex flex-col divide-y">
+          {visibleSegments.map((segment, i) => {
+            const isActive = phase === "playing" && i === index;
+            const agent = agents.find((a) => a.id === segment.agentId);
+            return (
+              <section
+                key={segment.id}
+                ref={isActive ? activeSectionRef : undefined}
+                className="flex flex-col gap-4 py-8 first:pt-0"
+              >
+                {agent && (
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    {agent.name}
+                    <span className="mx-1.5 text-border">/</span>
+                    <span className="font-medium normal-case tracking-normal">
+                      {agent.role}
+                    </span>
                   </p>
+                )}
 
-                  {/* Subtitles */}
-                  <div className="mt-6 rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur">
-                    <p className="text-lg leading-relaxed text-white/90 sm:text-xl">
-                      {currentSegment?.script}
+                <div>
+                  <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                    {segment.title}
+                  </h2>
+                  {segment.subtitle && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {segment.subtitle}
                     </p>
-                  </div>
-
-                  <div className="flex-1" />
-
-                  {/* Controls */}
-                  <div className="mt-6 space-y-3">
-                    <div className="flex items-center justify-between text-xs text-white/50">
-                      <span>
-                        Segment {index + 1} / {segments.length}
-                      </span>
-                      <span>{Math.round(progress * 100)}%</span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-indigo-400 transition-[width] duration-150 ease-linear"
-                        style={{ width: `${progress * 100}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setPaused((p) => !p)}
-                        className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-black transition-transform hover:scale-[1.03]"
-                      >
-                        {paused ? (
-                          <>
-                            <Play className="size-4" /> Resume
-                          </>
-                        ) : (
-                          <>
-                            <Pause className="size-4" /> Pause
-                          </>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={skip}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:border-white/30 hover:text-white"
-                      >
-                        <SkipForward className="size-4" />
-                        {index >= segments.length - 1 ? "Finish" : "Skip"}
-                      </button>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
-                {/* Evidence column */}
-                <EvidencePanel
-                  evidence={segmentEvidence}
-                  imageUrl={currentSegment?.imageUrl}
-                  className="lg:w-80 lg:shrink-0"
+                <WordReveal
+                  text={segment.script}
+                  progress={isActive ? progress : 1}
+                  active={isActive}
+                  className="text-foreground/90"
                 />
-              </div>
-            )}
-          </>
+
+                <EvidencePanel
+                  evidence={evidenceFor(segment)}
+                  imageUrl={segment.imageUrl}
+                  className="mt-1"
+                />
+              </section>
+            );
+          })}
+
+          {phase === "finished" && (
+            <div ref={finaleRef} className="py-8">
+              <Finale opportunities={report.opportunities} onReplay={replay} />
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/**
+ * A single orb entering the stage. Mounts in its off-screen (translated,
+ * transparent) state, then transitions to resting position on the next frame —
+ * first orb from the left, second from the right, alternating. Purely CSS
+ * transitions; no animation libraries.
+ */
+function StageOrb({
+  agent,
+  orbIndex,
+  direction,
+  active,
+}: {
+  agent: AgentPlan;
+  orbIndex: number;
+  direction: "left" | "right";
+  active: boolean;
+}) {
+  const [entered, setEntered] = useState(false);
+
+  useEffect(() => {
+    const r = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(r);
+  }, []);
+
+  const offset = direction === "left" ? "-2rem" : "2rem";
+
+  return (
+    <div
+      className="transition-all duration-700 ease-out"
+      style={{
+        transform: entered
+          ? `translateX(0) scale(${active ? 1.05 : 0.92})`
+          : `translateX(${offset}) scale(0.92)`,
+        opacity: entered ? (active ? 1 : 0.6) : 0,
+      }}
+    >
+      <div
+        className={cn(
+          "rounded-full transition-shadow duration-500",
+          active && "ring-2 ring-primary/30 ring-offset-2 ring-offset-background",
         )}
+      >
+        <AgentOrb agent={agent} index={orbIndex} size="sm" />
       </div>
     </div>
   );
@@ -317,25 +414,25 @@ function IdleView({
   segmentCount: number;
 }) {
   return (
-    <div className="mx-auto flex max-w-2xl flex-1 flex-col items-center justify-center gap-6 py-10 text-center">
-      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/40">
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-6 px-6 py-10 text-center">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
         Goliath · Investor briefing
       </p>
-      <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">
+      <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
         {title}
       </h1>
-      <p className="max-w-xl text-base leading-relaxed text-white/60">
+      <p className="max-w-xl text-base leading-relaxed text-muted-foreground">
         {summary}
       </p>
       <button
         type="button"
         onClick={onStart}
-        className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition-transform hover:scale-[1.03]"
+        className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
       >
         <Play className="size-4" />
         Start briefing
       </button>
-      <p className="text-xs text-white/30">
+      <p className="text-xs text-muted-foreground/70">
         {segmentCount} segments · narrated with subtitles
       </p>
     </div>

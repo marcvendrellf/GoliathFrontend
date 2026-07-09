@@ -6,15 +6,14 @@ import { RotateCcw, TrendingUp } from "lucide-react";
 import { STATUS_BADGE, STATUS_LABEL } from "./agents";
 
 /**
- * Closing view shown after the last segment: opportunities ranked by Goliath
- * Score, plus replay / full-report actions.
+ * Closing section of the report: opportunities ranked by Goliath Score, plus
+ * replay / full-report actions. Rendered as the final appended block of the
+ * scrolling document (the report's conclusion), not a separate takeover.
  */
 export function Finale({
-  title,
   opportunities,
   onReplay,
 }: {
-  title: string;
   opportunities: Opportunity[];
   onReplay: () => void;
 }) {
@@ -23,29 +22,28 @@ export function Finale({
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 py-12 text-center">
-      <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
-          Briefing complete
+    <section className="flex flex-col gap-6">
+      <div className="space-y-1">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          Conclusion · Ranked by Goliath Score
         </p>
-        <h2 className="text-3xl font-semibold text-white">{title}</h2>
-        <p className="text-sm text-white/50">
-          Final ranking by Goliath Score
-        </p>
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+          The opportunities
+        </h2>
       </div>
 
-      <ol className="flex w-full flex-col gap-3 text-left">
+      <ol className="flex w-full flex-col gap-3">
         {ranked.map((opp, i) => (
           <li
             key={opp.id}
-            className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur transition-colors hover:border-white/20"
+            className="flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:border-foreground/20"
           >
-            <span className="w-6 shrink-0 text-center text-lg font-semibold text-white/30">
+            <span className="w-6 shrink-0 text-center text-lg font-semibold tabular-nums text-muted-foreground">
               {i + 1}
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold text-white">
+                <span className="font-semibold text-foreground">
                   {opp.startupName}
                 </span>
                 <span
@@ -57,19 +55,21 @@ export function Finale({
                   {STATUS_LABEL[opp.status]}
                 </span>
                 {opp.sector && (
-                  <span className="text-xs text-white/40">{opp.sector}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {opp.sector}
+                  </span>
                 )}
               </div>
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-white/60">
-                <TrendingUp className="size-3.5 shrink-0 text-white/40" />
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                <TrendingUp className="size-3.5 shrink-0" />
                 {opp.prediction}
               </p>
             </div>
             <div className="shrink-0 text-right">
-              <div className="text-2xl font-semibold tabular-nums text-white">
+              <div className="text-2xl font-semibold tabular-nums text-foreground">
                 {opp.goliathScore}
               </div>
-              <div className="text-[10px] uppercase tracking-wide text-white/40">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 Goliath
               </div>
             </div>
@@ -77,24 +77,24 @@ export function Finale({
         ))}
       </ol>
 
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <button
-          type="button"
-          disabled
-          title="Coming in the report detail view"
-          className="cursor-not-allowed rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white/40"
-        >
-          View full report
-        </button>
+      <div className="flex flex-wrap items-center gap-3 pt-2">
         <button
           type="button"
           onClick={onReplay}
-          className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-transform hover:scale-[1.02]"
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
         >
           <RotateCcw className="size-4" />
           Replay briefing
         </button>
+        <button
+          type="button"
+          disabled
+          title="Coming in the report detail view"
+          className="cursor-not-allowed rounded-full border px-5 py-2.5 text-sm font-medium text-muted-foreground"
+        >
+          View full report
+        </button>
       </div>
-    </div>
+    </section>
   );
 }
