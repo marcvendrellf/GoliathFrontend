@@ -572,9 +572,9 @@ function TravelingOrb({
       <div
         className="pointer-events-none fixed left-0 top-0 z-30"
         style={{
-          width: 0,
-          height: 0,
-          transform: `translate(${box.cx}px, ${box.cy}px)`,
+          width: STAGE_SIZE,
+          height: STAGE_SIZE,
+          transform: `translate(${box.cx - STAGE_SIZE / 2}px, ${box.cy - STAGE_SIZE / 2}px)`,
           opacity: mode === "hidden" ? 0 : 1,
           filter: mode === "waiting" ? "grayscale(1) opacity(0.45)" : "none",
           transition,
@@ -583,9 +583,9 @@ function TravelingOrb({
       >
         <div
           style={{
-            width: STAGE_SIZE,
-            height: STAGE_SIZE,
-            transform: `translate(-50%, -50%) scale(${scale})`,
+            width: "100%",
+            height: "100%",
+            transform: `scale(${scale})`,
             transformOrigin: "center",
             willChange: "transform",
           }}
