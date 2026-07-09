@@ -48,3 +48,7 @@
 - Pulled Felipe's final briefing polish and the backend's scored run dump.
   Demo mode now uses the committed `run_dump/final` six-segment briefing with
   MP3 clips and word timings, while retaining the normal run/report API flow.
+
+- Made **Find Barcelona AI opportunities** a frontend-owned fixed demo. It
+  replays `web/src/lib/mock/mock-run.ts` and opens its local report even when a
+  backend base URL is configured; other prompts still use the backend.

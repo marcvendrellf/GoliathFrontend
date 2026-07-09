@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import type { Run, RunEvent } from "@/lib/contract";
 import { MOCK_AGENTS, MOCK_RUN } from "@/lib/mock/mock-run";
 import { agentRoleLabel } from "@/lib/goliath/agent-labels";
+import { FRONTEND_DEMO_QUERY } from "@/lib/demo";
 import type { ChatMessage, ContentBlock } from "./types";
 
-const DEMO_QUERY =
-  "Show me startup opportunities of investment in Barcelona related to AI.";
+const DEMO_QUERY = FRONTEND_DEMO_QUERY;
 
 function toolStatusFor(run?: Run) {
   if (!run || run.status === "planning_agents") return "executing";

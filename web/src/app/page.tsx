@@ -6,7 +6,8 @@ import { ChatPanel } from "@/components/chat";
 import { WorkflowCanvas } from "@/components/canvas/workflow-canvas";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 import { Sidebar } from "@/components/workspace/sidebar";
-import { createRun, getRun } from "@/lib/api";
+import { createFrontendDemoRun, createRun, getRun } from "@/lib/api";
+import { isFrontendDemoQuery } from "@/lib/demo";
 import type { Run } from "@/lib/contract";
 
 export default function HomePage() {
@@ -14,7 +15,9 @@ export default function HomePage() {
   const [chatKey, setChatKey] = useState(0);
 
   const submitQuery = useCallback(async (query: string) => {
-    const created = await createRun(query);
+    const created = isFrontendDemoQuery(query)
+      ? createFrontendDemoRun()
+      : await createRun(query);
     setRun(created);
     return created;
   }, []);

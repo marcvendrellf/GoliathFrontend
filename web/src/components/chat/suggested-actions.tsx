@@ -1,12 +1,13 @@
 "use client";
 
 import { ArrowRight, Database, Search, ShieldCheck, Shuffle, Workflow } from "@sim/emcn/icons";
+import { FRONTEND_DEMO_QUERY } from "@/lib/demo";
 
 const ACTIONS = [
   {
     id: "barcelona-ai",
     label: "Find Barcelona AI opportunities",
-    prompt: "Show me startup opportunities of investment in Barcelona related to AI.",
+    prompt: FRONTEND_DEMO_QUERY,
     icon: Search,
   },
   {

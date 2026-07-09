@@ -42,6 +42,11 @@ To route the existing frontend to it, set
 `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000` in `web/.env.local` and
 restart Next.js. The API's permissive development CORS allows the frontend call.
 
+The home action **Find Barcelona AI opportunities** is intentionally exempt: it
+always replays the frontend's committed `mock-run.ts` fixture, including its
+report route, even when the backend URL is configured. Other prompts use the
+backend normally.
+
 The integrated browser flow verifies report speaker/evidence metadata,
 timing-aware subtitles, backend-origin-aware audio, and final-report navigation.
 Set `USE_DEMO_FIXTURE=false` only when switching back to the generated mock or

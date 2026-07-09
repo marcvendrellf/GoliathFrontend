@@ -8,6 +8,7 @@
  */
 
 import type { FinalReport, ReportSummary, Run } from "@/lib/contract";
+import { FRONTEND_DEMO_RUN_ID, FRONTEND_DEMO_QUERY } from "@/lib/demo";
 import {
   MOCK_FINAL_REPORT,
   MOCK_REPORT_SUMMARIES,
@@ -25,6 +26,10 @@ export function resolveApiUrl(url: string): string {
 
 // Tracks when each mock run "started" so mockRunAt can replay the timeline.
 const mockRunStarts = new Map<string, number>();
+
+function usesFrontendFixture(runId: string): boolean {
+  return usingMockApi || runId === FRONTEND_DEMO_RUN_ID;
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -49,8 +54,17 @@ export async function createRun(query: string): Promise<Run> {
   });
 }
 
+export function createFrontendDemoRun(): Run {
+  mockRunStarts.set(FRONTEND_DEMO_RUN_ID, Date.now());
+  return {
+    ...mockRunAt(0),
+    id: FRONTEND_DEMO_RUN_ID,
+    query: FRONTEND_DEMO_QUERY,
+  };
+}
+
 export async function getRun(runId: string): Promise<Run> {
-  if (usingMockApi) {
+  if (usesFrontendFixture(runId)) {
     const startedAt = mockRunStarts.get(runId);
     // Unknown id (e.g. after a page refresh) → replay from the beginning.
     if (startedAt === undefined) {
@@ -68,6 +82,6 @@ export async function getReports(): Promise<ReportSummary[]> {
 }
 
 export async function getReport(runId: string): Promise<FinalReport> {
-  if (usingMockApi) return { ...MOCK_FINAL_REPORT, runId };
+  if (usesFrontendFixture(runId)) return { ...MOCK_FINAL_REPORT, runId };
   return request<FinalReport>(`/api/reports/${runId}`);
 }
