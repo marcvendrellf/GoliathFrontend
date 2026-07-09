@@ -17,7 +17,7 @@ export function ChatPanel({
   onSubmitQuery: (query: string) => Promise<Run>;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const { isSending, messages, reset, stop, submit } = useMockChat({
+  const { isSending, messages, stop, submit } = useMockChat({
     run,
     onSubmitQuery,
   });
@@ -58,22 +58,6 @@ export function ChatPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[var(--bg)]">
-      <div className="flex shrink-0 items-center justify-between border-[var(--border)] border-b px-6 py-3">
-        <div>
-          <h1 className="font-medium text-[var(--text-primary)] text-base">Goliath Copilot</h1>
-          <p className="text-[var(--text-muted)] text-small">
-            VC research team, assembled on demand
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={reset}
-          className="rounded-[6px] px-2 py-1 text-[var(--text-secondary)] text-small transition-colors hover-hover:bg-[var(--surface-4)]"
-        >
-          New chat
-        </button>
-      </div>
-
       <div
         ref={scrollerRef}
         className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 pt-4 pb-8 [scrollbar-gutter:stable_both-edges]"
