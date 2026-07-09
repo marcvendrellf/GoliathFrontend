@@ -38,7 +38,7 @@ export function EvidencePanel({
         <img
           src={imageUrl}
           alt="Supporting chart"
-          className="w-full rounded-lg border object-cover"
+          className="w-full rounded-lg border border-[#dedede] object-cover"
         />
       )}
 
@@ -47,11 +47,11 @@ export function EvidencePanel({
           {evidence.map((ev) => (
             <li
               key={ev.id}
-              className="rounded-lg border bg-card p-3 transition-colors hover:border-foreground/20"
+              className="rounded-lg border border-[#dedede] bg-card p-3 transition-colors hover:border-foreground/20"
             >
               <div className="flex items-center gap-2">
                 <FileText className="size-3.5 shrink-0 text-muted-foreground" />
-                <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                <span className="rounded-full border border-[#dedede] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   {SOURCE_LABEL[ev.source]}
                 </span>
                 {ev.url && (
