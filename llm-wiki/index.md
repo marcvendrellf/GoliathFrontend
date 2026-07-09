@@ -21,3 +21,8 @@ This wiki captures the current Goliath hackathon plan.
 ## Issue Drafts
 
 Issue drafts live in `issues/` and are ready to copy into GitHub once reviewed.
+
+## Source Audits
+
+- [Backend local-integration audit (2026-07-09)](sources/backend-local-integration-audit-2026-07-09.md)
+  - cloned backend status, local-run instructions, and frontend integration gaps.

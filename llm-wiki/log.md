@@ -34,3 +34,8 @@
 - Preserved report dependencies and the `/reports/[runId]` narration route;
   completed research exposes an `Open final report` CTA. `pnpm build`, TypeScript,
   and a runtime smoke check of `/reports/run-mock-1` pass.
+
+- Cloned and audited `josep-audenis/goliath-backend` at `be3bf7c` on this Mac.
+  Its Python 3.13 mock mode, tests, CORS, polling, reports, and SSE boot work;
+  recorded the local setup and remaining cross-repo integration gaps in a
+  source audit.

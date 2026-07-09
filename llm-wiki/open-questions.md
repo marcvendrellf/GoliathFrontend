@@ -11,18 +11,24 @@
 
 ## Backend implementation
 
-- What stack are Axel and Josep using?
-- Will backend support streaming events or simple polling?
-- Will reports be persisted or in memory?
+- Resolved 2026-07-09: Josep's backend is FastAPI/Pydantic, with an in-memory
+  run/report store, polling endpoints, and an SSE endpoint. It runs locally
+  without provider keys using deterministic mock data.
+- Integration work remains: add visible pacing to the mock pipeline; return
+  absolute/proxied audio URLs that the frontend can load; populate report
+  segment evidence/timing metadata; and preserve agent display metadata on the
+  report route. See the [backend audit](sources/backend-local-integration-audit-2026-07-09.md).
 - What Cala API fields are available for startup/funding-round data?
 - What news/search source will backend use?
 
 ## ElevenLabs
 
 - Do we have voice IDs?
-- Will backend generate audio files before the final presentation starts?
-- Where are audio files stored or served from?
-- Do we need per-word/per-sentence subtitle timing, or segment-level subtitles?
+- Backend has an ElevenLabs proxy and an in-memory audio store, but its returned
+  `/api/audio/...` URL is relative to the backend and currently cannot be
+  played by the separate frontend origin without a proxy or URL normalization.
+- Word timing is available from the backend's transcript endpoint, but not
+  populated on the report's presentation segments that the frontend consumes.
 
 ## Frontend implementation
 
