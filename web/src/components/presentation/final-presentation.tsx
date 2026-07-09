@@ -371,20 +371,36 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
   return (
     <div className="min-h-screen w-full bg-white text-foreground">
-      {/* Waiting row: greyed anchors at the bottom-left, clear of the centered
-          dock. The visible orbs are the fixed traveling elements below. */}
+      {/* Waiting row: greyed anchors at the bottom-left. Fixed-width slots so
+          orbs and names line up cleanly. The visible orbs are the fixed
+          traveling elements below, names live here in the slots. */}
       {isLarge && (
-        <div className="fixed bottom-16 left-6 z-20 flex items-end gap-6">
-          {agents.map((agent) => (
-            <div
-              key={agent.id}
-              ref={(el) => {
-                if (el) waitingSlotRefs.current.set(agent.id, el);
-                else waitingSlotRefs.current.delete(agent.id);
-              }}
-              style={{ width: WAIT_SIZE, height: WAIT_SIZE }}
-            />
-          ))}
+        <div className="fixed bottom-10 left-6 z-20 flex items-start gap-2">
+          {agents.map((agent) => {
+            const waiting = orbModeFor(agent).mode === "waiting";
+            return (
+              <div
+                key={agent.id}
+                className="flex w-20 flex-col items-center gap-1.5"
+              >
+                <div
+                  ref={(el) => {
+                    if (el) waitingSlotRefs.current.set(agent.id, el);
+                    else waitingSlotRefs.current.delete(agent.id);
+                  }}
+                  style={{ width: WAIT_SIZE, height: WAIT_SIZE }}
+                />
+                <span
+                  className={cn(
+                    "w-full truncate text-center text-[10px] font-medium text-muted-foreground transition-opacity duration-300",
+                    !waiting && "opacity-0",
+                  )}
+                >
+                  {agent.name}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -525,6 +541,10 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
  * On the dock transition's end the parent mounts a static in-flow copy in the
  * gutter (which scrolls with the paragraph) and this orb fades to `hidden`.
  */
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+
 function TravelingOrb({
   agent,
   colors,
@@ -549,84 +569,105 @@ function TravelingOrb({
   signal: string;
 }) {
   const [box, setBox] = useState({ x: 0, y: 0, size: WAIT_SIZE });
+  const boxRef = useRef(box);
+  boxRef.current = box;
 
+  // Waiting and talking targets are viewport-fixed, so measure once per
+  // signal change and let a CSS transition carry the orb there.
   useLayoutEffect(() => {
-    let x = 0;
-    let y = 0;
-    let size = WAIT_SIZE;
+    if (mode === "docking" || mode === "hidden") return;
     if (mode === "talking") {
-      size = STAGE_SIZE;
-      x = STAGE_X;
-      y = window.innerHeight / 2 - size / 2;
-    } else if (mode === "waiting") {
-      const r = waitingSlots.current?.get(agent.id)?.getBoundingClientRect();
-      if (r) {
-        x = r.left;
-        y = r.top;
-        size = r.width;
-      }
-    } else {
-      const r = gutters.current?.get(dockIndex)?.getBoundingClientRect();
-      if (r) {
-        x = r.left;
-        y = r.top;
-        size = r.width;
-      }
+      const size = STAGE_SIZE;
+      setBox({ x: STAGE_X, y: window.innerHeight / 2 - size / 2, size });
+      return;
     }
-    setBox({ x, y, size });
+    const r = waitingSlots.current?.get(agent.id)?.getBoundingClientRect();
+    if (r && r.width > 0) setBox({ x: r.left, y: r.top, size: r.width });
     // Recompute whenever the resolved target changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signal]);
 
+  // Docking chases the LIVE gutter rect frame by frame. The page is usually
+  // still auto-scrolling (and images can shift layout) while the orb is in
+  // transit, so a one-shot measurement lands in the wrong place. Once the orb
+  // settles on the (now stationary) slot, hand off to the static in-flow copy.
+  useEffect(() => {
+    if (mode !== "docking") return;
+    let raf = 0;
+    const step = () => {
+      const r = gutters.current?.get(dockIndex)?.getBoundingClientRect();
+      if (r && r.width > 0) {
+        const cur = boxRef.current;
+        const next = {
+          x: lerp(cur.x, r.left, 0.16),
+          y: lerp(cur.y, r.top, 0.16),
+          size: lerp(cur.size, r.width, 0.16),
+        };
+        const settled =
+          Math.abs(next.x - r.left) < 0.5 &&
+          Math.abs(next.y - r.top) < 0.5 &&
+          Math.abs(next.size - r.width) < 0.5;
+        if (settled) {
+          setBox({ x: r.left, y: r.top, size: r.width });
+          onDocked(dockIndex);
+          return;
+        }
+        setBox(next);
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, dockIndex]);
+
+  // The orb canvas is rendered at STAGE_SIZE and scaled, never resized, so the
+  // flight is a pure composited transform (no WebGL canvas re-layout jank).
+  const scale = box.size / STAGE_SIZE;
   const agentState = mode === "talking" ? "talking" : null;
-  const filter = mode === "waiting" ? "grayscale(1) opacity(0.45)" : "none";
-  const opacity = mode === "hidden" ? 0 : 1;
   const ease = "cubic-bezier(0.22, 1, 0.36, 1)";
-  const transition = animate
-    ? `transform 700ms ${ease}, width 700ms ${ease}, height 700ms ${ease}, opacity 400ms ease, filter 500ms ease`
-    : "none";
+  const transition =
+    !animate || mode === "docking"
+      ? "opacity 400ms ease, filter 500ms ease"
+      : `transform 700ms ${ease}, opacity 400ms ease, filter 500ms ease`;
 
   return (
-    <div
-      onTransitionEnd={(e) => {
-        if (e.propertyName === "transform" && mode === "docking") {
-          onDocked(dockIndex);
-        }
-      }}
-      className="pointer-events-none fixed left-0 top-0 z-30"
-      style={{
-        width: box.size,
-        height: box.size,
-        transform: `translate(${box.x}px, ${box.y}px)`,
-        opacity,
-        filter,
-        transition,
-        willChange: "transform, width, height",
-      }}
-    >
-      <PresentationOrb
-        colors={colors}
-        seed={seed}
-        agentState={agentState}
-        className="h-full w-full"
-      />
-      {(mode === "waiting" || mode === "talking") && (
-        <div className="absolute left-1/2 top-full mt-2 w-max -translate-x-1/2 text-center">
-          <p
-            className={
-              mode === "talking"
-                ? "text-sm font-medium text-foreground"
-                : "text-[10px] font-medium text-muted-foreground"
-            }
-          >
-            {agent.name}
-          </p>
-          {mode === "talking" && (
-            <p className="text-xs text-muted-foreground">{agent.role}</p>
-          )}
+    <>
+      <div
+        className="pointer-events-none fixed left-0 top-0 z-30"
+        style={{
+          width: STAGE_SIZE,
+          height: STAGE_SIZE,
+          transformOrigin: "0 0",
+          transform: `translate(${box.x}px, ${box.y}px) scale(${scale})`,
+          opacity: mode === "hidden" ? 0 : 1,
+          filter: mode === "waiting" ? "grayscale(1) opacity(0.45)" : "none",
+          transition,
+          willChange: "transform",
+        }}
+      >
+        <PresentationOrb
+          colors={colors}
+          seed={seed}
+          agentState={agentState}
+          className="h-full w-full"
+        />
+      </div>
+      {/* Name label rides the same eased path but never scales. */}
+      <div
+        className="pointer-events-none fixed left-0 top-0 z-30"
+        style={{
+          transform: `translate(${box.x + box.size / 2}px, ${box.y + box.size + 10}px)`,
+          opacity: mode === "talking" ? 1 : 0,
+          transition,
+        }}
+      >
+        <div className="w-max -translate-x-1/2 text-center">
+          <p className="text-sm font-medium text-foreground">{agent.name}</p>
+          <p className="text-xs text-muted-foreground">{agent.role}</p>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -662,8 +703,8 @@ function PlaybackDock({
   const isLast = index >= total - 1;
 
   return (
-    <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
-      <div className="flex w-[min(92vw,560px)] items-center gap-3 rounded-xl border border-[#dedede] bg-white px-3 py-2 shadow-sm">
+    <div className="fixed bottom-6 right-6 z-50">
+      <div className="flex w-[min(92vw,480px)] items-center gap-3 rounded-xl border border-[#dedede] bg-white px-3 py-2 shadow-sm">
         <div className="flex items-center gap-1">
           <button
             type="button"

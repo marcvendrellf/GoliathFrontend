@@ -1,9 +1,8 @@
 "use client";
 
 import type { Opportunity } from "@/lib/contract";
-import { cn } from "@/lib/utils";
-import { RotateCcw, TrendingUp } from "lucide-react";
-import { STATUS_BADGE, STATUS_LABEL } from "./agents";
+import { RotateCcw } from "lucide-react";
+import { STATUS_LABEL } from "./agents";
 
 /**
  * Closing section of the report: opportunities ranked by Goliath Score, plus
@@ -32,26 +31,18 @@ export function Finale({
         </h2>
       </div>
 
-      <ol className="flex w-full flex-col gap-3">
+      <ol className="flex w-full flex-col gap-6">
         {ranked.map((opp, i) => (
-          <li
-            key={opp.id}
-            className="flex items-center gap-4 rounded-lg border border-[#dedede] bg-card p-4 transition-colors hover:border-foreground/20"
-          >
-            <span className="w-6 shrink-0 text-center text-lg font-semibold tabular-nums text-muted-foreground">
+          <li key={opp.id} className="flex items-start gap-4">
+            <span className="w-6 shrink-0 pt-0.5 text-center text-lg font-semibold tabular-nums text-muted-foreground/60">
               {i + 1}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                 <span className="font-semibold text-foreground">
                   {opp.startupName}
                 </span>
-                <span
-                  className={cn(
-                    "rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-                    STATUS_BADGE[opp.status],
-                  )}
-                >
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   {STATUS_LABEL[opp.status]}
                 </span>
                 {opp.sector && (
@@ -60,8 +51,7 @@ export function Finale({
                   </span>
                 )}
               </div>
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-                <TrendingUp className="size-3.5 shrink-0" />
+              <p className="mt-1 text-sm text-muted-foreground">
                 {opp.prediction}
               </p>
             </div>
