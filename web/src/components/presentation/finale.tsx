@@ -36,7 +36,7 @@ export function Finale({
         {ranked.map((opp, i) => (
           <li
             key={opp.id}
-            className="flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:border-foreground/20"
+            className="flex items-center gap-4 rounded-lg border border-[#dedede] bg-card p-4 transition-colors hover:border-foreground/20"
           >
             <span className="w-6 shrink-0 text-center text-lg font-semibold tabular-nums text-muted-foreground">
               {i + 1}
@@ -81,7 +81,7 @@ export function Finale({
         <button
           type="button"
           onClick={onReplay}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          className="inline-flex h-10 items-center gap-2 rounded-md bg-[#1d1d1d] px-5 text-sm font-medium text-white transition-colors hover:bg-[#333333]"
         >
           <RotateCcw className="size-4" />
           Replay briefing
@@ -90,7 +90,7 @@ export function Finale({
           type="button"
           disabled
           title="Coming in the report detail view"
-          className="cursor-not-allowed rounded-full border px-5 py-2.5 text-sm font-medium text-muted-foreground"
+          className="inline-flex h-10 cursor-not-allowed items-center rounded-md border border-[#dedede] px-5 text-sm font-medium text-muted-foreground"
         >
           View full report
         </button>
