@@ -54,6 +54,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   const [phase, setPhase] = useState<Phase>("playing");
   const [index, setIndex] = useState(0);
   const [progress, setProgress] = useState(0); // 0..1 within current segment
+  const [requiresAudioGesture, setRequiresAudioGesture] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -99,6 +100,15 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     }
   }, []);
 
+  const resumeAudio = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    void audio.play().then(
+      () => setRequiresAudioGesture(false),
+      () => setRequiresAudioGesture(true),
+    );
+  }, []);
+
   const teardown = useCallback(() => {
     clearTimer();
     if (rafRef.current !== null) {
@@ -120,6 +130,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     if (phase !== "playing" || !currentSegment) return;
 
     setProgress(0);
+    setRequiresAudioGesture(false);
     const durationMs = currentSegment.durationMs ?? DEFAULT_SEGMENT_MS;
 
     const startTimerFallback = (ms: number) => {
@@ -138,8 +149,9 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
         startTimerFallback(durationMs);
       };
       audio.play().catch(() => {
-        audioRef.current = null;
-        startTimerFallback(durationMs);
+        // Route navigation is not always considered a user gesture. Keep the
+        // ready audio instance and invite the user to resume it explicitly.
+        if (audioRef.current === audio) setRequiresAudioGesture(true);
       });
     } else {
       startTimerFallback(durationMs);
@@ -178,6 +190,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     clearHandoffTimer();
     setIndex(0);
     setProgress(0);
+    setRequiresAudioGesture(false);
     setPhase("playing");
   };
 
@@ -314,6 +327,16 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
                       </p>
                     )}
                   </div>
+
+                  {isActive && requiresAudioGesture && (
+                    <button
+                      type="button"
+                      onClick={resumeAudio}
+                      className="mt-4 rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-85"
+                    >
+                      Play audio
+                    </button>
+                  )}
 
                   <WordReveal
                     text={segment.script}

@@ -78,3 +78,8 @@
 - Restored the live transcript to its original in-flow report section after the
   viewport-centered version produced duplicate, overlapping text. The 900ms
   speaker handoff pause and compact waiting-agent column remain in place.
+
+- Added an explicit **Play audio** recovery control for browser autoplay
+  policies. The frontend keeps the preloaded local MP3 ready after a blocked
+  `audio.play()` call instead of silently switching the narration to its timer
+  fallback.
