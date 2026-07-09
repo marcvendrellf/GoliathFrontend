@@ -15,6 +15,10 @@ serves everything from mock data (`src/lib/mock/mock-run.ts`), including a
 replayed 18-second "live" research run. To hit the real backend, copy
 `.env.example` → `.env.local` and set the URL (assumed `http://localhost:8000`).
 
+To test narrated playback without a backend, set `NEXT_PUBLIC_MOCK_AUDIO_URL`
+in `.env.local` to a public MP3 URL. The presentation uses that clip for every
+mock segment; leave it unset for the normal silent, timer-paced mock demo.
+
 ## Structure & ownership
 
 ```txt

@@ -1,9 +1,10 @@
 "use client";
 
 import { AgentOrb } from "@/components/agents/agent-orb";
+import { useSegmentAudio } from "@/lib/audio/use-segment-audio";
 import type { AgentPlan, Evidence, FinalReport } from "@/lib/contract";
 import { cn } from "@/lib/utils";
-import { Pause, Play, SkipForward } from "lucide-react";
+import { Pause, Play, SkipForward, Volume2, VolumeX } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildEvidenceMap, deriveAgents } from "./agents";
 import { EvidencePanel } from "./evidence-panel";
@@ -31,9 +32,8 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [progress, setProgress] = useState(0); // 0..1 within current segment
+  const [timerProgress, setTimerProgress] = useState(0); // 0..1 within current segment
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const pausedRef = useRef(false);
   // Timer fallback bookkeeping (so pause/resume preserves remaining time).
@@ -48,8 +48,11 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   const finaleRef = useRef<HTMLDivElement | null>(null);
 
   const currentSegment = segments[index];
+  const mockAudioUrl = process.env.NEXT_PUBLIC_MOCK_AUDIO_URL;
+  const currentAudioUrl = mockAudioUrl || currentSegment?.audioUrl;
 
   const advance = useCallback(() => {
+    setTimerProgress(0);
     setIndex((i) => {
       if (i >= segments.length - 1) {
         setPhase("finished");
@@ -66,69 +69,88 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     }
   }, []);
 
+  const startTimerFallback = useCallback(
+    (durationMs: number, initialProgress = 0) => {
+      clearTimer();
+      const remaining = Math.max(0, durationMs * (1 - initialProgress));
+      const startedAt = Date.now();
+      const id = window.setTimeout(advance, remaining);
+      timer.current = { id, startedAt, remaining, total: durationMs };
+      setTimerProgress(initialProgress);
+    },
+    [advance, clearTimer],
+  );
+
+  const handleAudioError = useCallback(
+    (audioProgress: number) => {
+      if (phase !== "playing" || !currentSegment || timer.current) return;
+      startTimerFallback(currentSegment.durationMs ?? DEFAULT_SEGMENT_MS, audioProgress);
+    },
+    [currentSegment, phase, startTimerFallback],
+  );
+
+  const {
+    progress: audioProgress,
+    muted,
+    load: loadAudio,
+    play: playAudio,
+    pause: pauseAudio,
+    stop: stopAudio,
+    preload: preloadAudio,
+    toggleMuted,
+  } = useSegmentAudio({ onEnded: advance, onError: handleAudioError });
+
   const teardown = useCallback(() => {
     clearTimer();
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.onended = null;
-      audioRef.current.onerror = null;
-      audioRef.current.src = "";
-      audioRef.current = null;
-    }
-  }, [clearTimer]);
+    stopAudio();
+  }, [clearTimer, stopAudio]);
 
   // Set up playback whenever we enter a new segment while playing.
   useEffect(() => {
     if (phase !== "playing" || !currentSegment) return;
 
-    setProgress(0);
     const durationMs = currentSegment.durationMs ?? DEFAULT_SEGMENT_MS;
+    let timerStartFrame: number | null = null;
 
-    const startTimerFallback = (ms: number) => {
-      const startedAt = Date.now();
-      const id = window.setTimeout(advance, ms);
-      timer.current = { id, startedAt, remaining: ms, total: ms };
-    };
-
-    if (currentSegment.audioUrl) {
-      const audio = new Audio(currentSegment.audioUrl);
-      audioRef.current = audio;
-      audio.onended = advance;
-      audio.onerror = () => {
-        // Audio failed to load/play → silent fallback on the timer.
-        audioRef.current = null;
-        startTimerFallback(durationMs);
-      };
-      audio.play().catch(() => {
-        audioRef.current = null;
-        startTimerFallback(durationMs);
-      });
+    if (currentAudioUrl) {
+      loadAudio(currentAudioUrl);
+      void playAudio();
     } else {
-      startTimerFallback(durationMs);
+      // Start after this setup effect commits, avoiding a synchronous render
+      // cascade while retaining the same timer-based mock behavior.
+      timerStartFrame = requestAnimationFrame(() =>
+        startTimerFallback(durationMs),
+      );
     }
 
-    // Progress ticker. Drives both the header bar and the word-by-word reveal.
-    // Frozen while paused so the reveal stops advancing.
+    preloadAudio(mockAudioUrl || segments[index + 1]?.audioUrl);
+
+    // Silent playback retains the prior timer-driven subtitle path.
     const tick = () => {
       if (!pausedRef.current) {
-        const audio = audioRef.current;
-        if (audio && audio.duration > 0) {
-          setProgress(Math.min(1, audio.currentTime / audio.duration));
-        } else if (timer.current) {
+        if (timer.current) {
           const t = timer.current;
           const remaining = Math.max(0, t.remaining - (Date.now() - t.startedAt));
-          setProgress(Math.min(1, (t.total - remaining) / t.total));
+          setTimerProgress(Math.min(1, (t.total - remaining) / t.total));
         }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
 
-    return teardown;
+    return () => {
+      if (timerStartFrame !== null) cancelAnimationFrame(timerStartFrame);
+      clearTimer();
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      stopAudio();
+    };
     // Re-run when the active segment changes or playback (re)starts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, index]);
@@ -139,21 +161,21 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     if (phase !== "playing") return;
 
     if (paused) {
-      if (audioRef.current) audioRef.current.pause();
+      pauseAudio();
       if (timer.current) {
         const t = timer.current;
         window.clearTimeout(t.id);
         t.remaining = Math.max(0, t.remaining - (Date.now() - t.startedAt));
       }
     } else {
-      if (audioRef.current) audioRef.current.play().catch(() => {});
+      if (currentAudioUrl && !timer.current) void playAudio();
       if (timer.current) {
         const t = timer.current;
         t.startedAt = Date.now();
         t.id = window.setTimeout(advance, t.remaining);
       }
     }
-  }, [paused, phase, advance]);
+  }, [paused, phase, advance, currentAudioUrl, pauseAudio, playAudio]);
 
   useEffect(() => teardown, [teardown]);
 
@@ -174,7 +196,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     teardown();
     setIndex(0);
     setPaused(false);
-    setProgress(0);
+    setTimerProgress(0);
     setPhase("playing");
   };
 
@@ -185,6 +207,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
   };
 
   const activeAgentId = phase === "playing" ? currentSegment?.agentId : undefined;
+  const progress = Math.max(timerProgress, audioProgress);
 
   // Orbs that have entered the stage: any agent whose first segment has started.
   const enteredAgents: AgentPlan[] =
@@ -254,6 +277,14 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
                         <Pause className="size-4" /> Pause
                       </>
                     )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleMuted}
+                    aria-label={muted ? "Unmute narration" : "Mute narration"}
+                    className="inline-flex size-8 items-center justify-center rounded-full border text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+                  >
+                    {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
                   </button>
                   <button
                     type="button"
