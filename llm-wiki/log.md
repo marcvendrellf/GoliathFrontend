@@ -27,3 +27,10 @@
 - Created route stubs with owner annotations: `/` and `/run/[runId]` (Felipe,
   issue #1), `/reports` and `/reports/[runId]` (Marc, issues #2-#3).
 - Added issue drafts 04-06 and 08 and filed them on GitHub (#5-#8).
+
+- Merged Felipe's Sim-style chat workflow into `dev`. Sim's UI layer is now
+  fully vendored (workspace shell, chat, workflow canvas, primitives, icons,
+  and utilities) while Goliath retains its mock/HTTP contract and final report.
+- Preserved report dependencies and the `/reports/[runId]` narration route;
+  completed research exposes an `Open final report` CTA. `pnpm build`, TypeScript,
+  and a runtime smoke check of `/reports/run-mock-1` pass.
