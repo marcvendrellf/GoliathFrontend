@@ -24,6 +24,8 @@ const DEFAULT_SEGMENT_MS = 8000;
 // Orb choreography sizes (px). Base canvas is rendered at STAGE_SIZE and scaled
 // down for the waiting row and the docked gutter marker.
 const STAGE_SIZE = 220; // talking, mid-left
+const STAGE_CENTER_X = 168;
+const STAGE_CENTER_Y_RATIO = 0.5;
 const WAIT_SIZE = 72; // greyed, bottom row
 const DOCK_SIZE = 36; // docked, section gutter
 
@@ -313,7 +315,6 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
               mode={mode}
               dockIndex={dockIndex}
               animate={armed}
-              activeSection={activeSectionRef}
               waitingSlots={waitingSlotRefs}
               gutters={gutterRefs}
               onDocked={markDocked}
@@ -437,7 +438,6 @@ function TravelingOrb({
   mode,
   dockIndex,
   animate,
-  activeSection,
   waitingSlots,
   gutters,
   onDocked,
@@ -449,7 +449,6 @@ function TravelingOrb({
   mode: OrbMode;
   dockIndex: number;
   animate: boolean;
-  activeSection: React.RefObject<HTMLElement | null>;
   waitingSlots: React.RefObject<Map<string, HTMLElement>>;
   gutters: React.RefObject<Map<number, HTMLElement>>;
   onDocked: (i: number) => void;
@@ -474,23 +473,12 @@ function TravelingOrb({
   );
 
   const talkingTarget = useCallback(() => {
-    const section = activeSection.current?.getBoundingClientRect();
-    if (!section || section.width <= 0) {
-      return {
-        x: Math.max(48, (window.innerWidth - 768) / 4) - STAGE_SIZE / 2,
-        y: window.innerHeight / 2 - STAGE_SIZE / 2,
-        size: STAGE_SIZE,
-      };
-    }
-
-    const centerX = Math.max(STAGE_SIZE / 2 + 32, section.left / 2);
-    const centerY = section.top + Math.min(section.height * 0.45, 220);
     return {
-      x: centerX - STAGE_SIZE / 2,
-      y: Math.max(96, centerY - STAGE_SIZE / 2),
+      x: STAGE_CENTER_X - STAGE_SIZE / 2,
+      y: window.innerHeight * STAGE_CENTER_Y_RATIO - STAGE_SIZE / 2,
       size: STAGE_SIZE,
     };
-  }, [activeSection]);
+  }, []);
 
   const currentTarget = useCallback((): OrbBox | null => {
     if (mode === "docking" || mode === "hidden") return null;
