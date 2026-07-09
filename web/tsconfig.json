@@ -19,7 +19,14 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@sim/emcn": ["./src/vendor/emcn/index.ts"],
+      "@sim/emcn/icons": ["./src/vendor/emcn/icons/index.ts"],
+      "@sim/emcn/*": ["./src/vendor/emcn/*"],
+      "@sim/workflow-renderer": ["./src/vendor/workflow-renderer/index.ts"],
+      "@sim/workflow-renderer/*": ["./src/vendor/workflow-renderer/*"],
+      "@sim/utils": ["./src/vendor/utils/index.ts"],
+      "@sim/utils/*": ["./src/vendor/utils/*"]
     }
   },
   "include": [
