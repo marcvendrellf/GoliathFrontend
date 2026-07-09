@@ -1,25 +1,21 @@
 /**
  * Route: /reports/[runId]
- * Owner: Marc — GitHub issues #2 (narrated presentation) and #3 (report detail).
+ * Owner: Marc — GitHub issue #2 (narrated presentation).
  *
- * Build here: api.getReport(runId) → FinalPresentation (orbs enter one at a
- * time, ElevenLabs audioUrl playback, subtitles from segment.script, evidence
- * panel) plus the opportunity detail view. Components under
- * src/components/presentation/ and src/components/reports/.
+ * Fetches the FinalReport via api.getReport(runId) (mock-backed when no
+ * backend is configured) and hands it to the client FinalPresentation, which
+ * runs the narrated multi-agent briefing (orbs, audio/subtitle sequencing,
+ * evidence panel, finale). Issue #3 will add the opportunity detail view.
  */
+import { FinalPresentation } from "@/components/presentation/final-presentation";
+import { getReport } from "@/lib/api";
+
 export default async function ReportDetailPage({
   params,
 }: {
   params: Promise<{ runId: string }>;
 }) {
   const { runId } = await params;
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-2 p-8">
-      <h1 className="text-xl font-medium">Report {runId}</h1>
-      <p className="text-sm text-muted-foreground">
-        Issues #2 and #3 (Marc): final presentation and opportunity detail go
-        here.
-      </p>
-    </main>
-  );
+  const report = await getReport(runId);
+  return <FinalPresentation report={report} />;
 }
