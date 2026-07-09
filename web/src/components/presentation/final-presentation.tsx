@@ -24,8 +24,9 @@ const DEFAULT_SEGMENT_MS = 8000;
 
 // Orb choreography sizes (px). Base canvas is rendered at STAGE_SIZE and scaled
 // down for the waiting row and the docked gutter marker.
-const STAGE_SIZE = 160; // talking, mid-left
-const STAGE_X = 48; // talking, distance from the left edge
+const STAGE_SIZE = 220; // talking, mid-left
+const STAGE_CENTER_X = 168;
+const STAGE_CENTER_Y_RATIO = 0.5;
 const WAIT_SIZE = 72; // greyed, bottom row
 const DOCK_SIZE = 36; // docked, section gutter
 
@@ -274,15 +275,16 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     <div className="min-h-screen w-full bg-white text-foreground">
       {/* Waiting row: compact pending agents only. The visible orbs are the
           fixed traveling elements below; names live here in the slots. */}
-      {isLarge && (
-        <div className="fixed bottom-8 left-10 z-20 flex items-start gap-4">
+      {isLarge && waitingAgents.length > 0 && (
+        <div className="fixed bottom-14 left-16 z-20 flex items-start gap-8">
           {waitingAgents.map((agent) => {
             return (
               <div
                 key={agent.id}
-                className="flex w-28 flex-col items-center gap-2"
+                className="flex w-32 flex-col items-center gap-2"
               >
                 <div
+                  className="mx-auto"
                   ref={(el) => {
                     if (el) waitingSlotRefs.current.set(agent.id, el);
                     else waitingSlotRefs.current.delete(agent.id);
@@ -430,6 +432,8 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
+type OrbBox = { cx: number; cy: number; size: number };
+
 function TravelingOrb({
   agent,
   colors,
@@ -453,53 +457,65 @@ function TravelingOrb({
   onDocked: (i: number) => void;
   signal: string;
 }) {
-  const [box, setBox] = useState({ x: 0, y: 0, size: WAIT_SIZE });
+  const [box, setBox] = useState({ cx: 0, cy: 0, size: WAIT_SIZE });
   const boxRef = useRef(box);
   boxRef.current = box;
-  const targetRef = useRef(box);
 
-  const moveTo = useCallback((next: { x: number; y: number; size: number }) => {
+  const moveTo = useCallback((next: OrbBox) => {
     boxRef.current = next;
     setBox(next);
   }, []);
 
-  const setTarget = useCallback(
-    (next: { x: number; y: number; size: number }) => {
-      targetRef.current = next;
-      if (!animate) moveTo(next);
-    },
-    [animate, moveTo],
+  const targetFromRect = useCallback(
+    (rect: DOMRect, size = rect.width) => ({
+      cx: rect.left + rect.width / 2,
+      cy: rect.top + rect.height / 2,
+      size,
+    }),
+    [],
   );
 
-  // Waiting and talking targets are viewport-fixed, so measure once per signal
-  // change and let the shared frame loop carry the orb there.
-  useLayoutEffect(() => {
-    if (mode === "docking" || mode === "hidden") return;
-    if (mode === "talking") {
-      const size = STAGE_SIZE;
-      setTarget({ x: STAGE_X, y: window.innerHeight / 2 - size / 2, size });
-      return;
-    }
+  const talkingTarget = useCallback(() => {
+    return {
+      cx: STAGE_CENTER_X,
+      cy: window.innerHeight * STAGE_CENTER_Y_RATIO,
+      size: STAGE_SIZE,
+    };
+  }, []);
+
+  const currentTarget = useCallback((): OrbBox | null => {
+    if (mode === "docking" || mode === "hidden") return null;
+    if (mode === "talking") return talkingTarget();
     const r = waitingSlots.current?.get(agent.id)?.getBoundingClientRect();
-    if (r && r.width > 0) setTarget({ x: r.left, y: r.top, size: r.width });
-    // Recompute whenever the resolved target changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signal]);
+    return r && r.width > 0 ? targetFromRect(r, WAIT_SIZE) : null;
+  }, [agent.id, mode, talkingTarget, targetFromRect, waitingSlots]);
+
+  // Before the choreography is armed, snap each orb into its initial centered
+  // anchor so the later animated handoff starts from the right measured box.
+  useLayoutEffect(() => {
+    if (animate) return;
+    const target = currentTarget();
+    if (target) moveTo(target);
+  }, [animate, currentTarget, moveTo, signal]);
 
   useEffect(() => {
     if (!animate || mode === "docking" || mode === "hidden") return;
     let raf = 0;
     const step = () => {
+      const target = currentTarget();
+      if (!target) {
+        raf = requestAnimationFrame(step);
+        return;
+      }
       const cur = boxRef.current;
-      const target = targetRef.current;
       const next = {
-        x: lerp(cur.x, target.x, 0.18),
-        y: lerp(cur.y, target.y, 0.18),
-        size: lerp(cur.size, target.size, 0.18),
+        cx: lerp(cur.cx, target.cx, 0.2),
+        cy: lerp(cur.cy, target.cy, 0.2),
+        size: lerp(cur.size, target.size, mode === "talking" ? 0.28 : 0.2),
       };
       const settled =
-        Math.abs(next.x - target.x) < 0.5 &&
-        Math.abs(next.y - target.y) < 0.5 &&
+        Math.abs(next.cx - target.cx) < 0.5 &&
+        Math.abs(next.cy - target.cy) < 0.5 &&
         Math.abs(next.size - target.size) < 0.5;
       if (settled) {
         moveTo(target);
@@ -510,7 +526,7 @@ function TravelingOrb({
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [animate, mode, signal, moveTo]);
+  }, [animate, mode, signal, currentTarget, moveTo]);
 
   // Docking chases the LIVE gutter rect frame by frame. The page is usually
   // still auto-scrolling (and images can shift layout) while the orb is in
@@ -522,18 +538,19 @@ function TravelingOrb({
     const step = () => {
       const r = gutters.current?.get(dockIndex)?.getBoundingClientRect();
       if (r && r.width > 0) {
+        const target = targetFromRect(r, r.width);
         const cur = boxRef.current;
         const next = {
-          x: lerp(cur.x, r.left, 0.14),
-          y: lerp(cur.y, r.top, 0.14),
-          size: lerp(cur.size, r.width, 0.14),
+          cx: lerp(cur.cx, target.cx, 0.14),
+          cy: lerp(cur.cy, target.cy, 0.14),
+          size: lerp(cur.size, target.size, 0.14),
         };
         const settled =
-          Math.abs(next.x - r.left) < 0.5 &&
-          Math.abs(next.y - r.top) < 0.5 &&
-          Math.abs(next.size - r.width) < 0.5;
+          Math.abs(next.cx - target.cx) < 0.5 &&
+          Math.abs(next.cy - target.cy) < 0.5 &&
+          Math.abs(next.size - target.size) < 0.5;
         if (settled) {
-          moveTo({ x: r.left, y: r.top, size: r.width });
+          moveTo(target);
           onDocked(dockIndex);
           return;
         }
@@ -546,9 +563,11 @@ function TravelingOrb({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, dockIndex]);
 
-  // The orb canvas is rendered at STAGE_SIZE and scaled, never resized, so the
-  // flight is a pure composited transform (no WebGL canvas re-layout jank).
-  const scale = box.size / STAGE_SIZE;
+  // The speaker orb must always render at full stage scale. Only waiting and
+  // docking states visually shrink, so the handoff cannot land half-sized in
+  // the fixed speaker slot.
+  const visualSize = mode === "talking" ? STAGE_SIZE : box.size;
+  const scale = visualSize / STAGE_SIZE;
   const agentState = mode === "talking" ? "talking" : null;
   const ease = "cubic-bezier(0.22, 1, 0.36, 1)";
   const transition = "opacity 400ms ease, filter 500ms ease";
@@ -560,26 +579,35 @@ function TravelingOrb({
         style={{
           width: STAGE_SIZE,
           height: STAGE_SIZE,
-          transformOrigin: "0 0",
-          transform: `translate(${box.x}px, ${box.y}px) scale(${scale})`,
+          transform: `translate(${box.cx - STAGE_SIZE / 2}px, ${box.cy - STAGE_SIZE / 2}px)`,
           opacity: mode === "hidden" ? 0 : 1,
           filter: mode === "waiting" ? "grayscale(1) opacity(0.45)" : "none",
           transition,
           willChange: "transform",
         }}
       >
-        <PresentationOrb
-          colors={colors}
-          seed={seed}
-          agentState={agentState}
-          className="h-full w-full"
-        />
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            transform: `scale(${scale})`,
+            transformOrigin: "center",
+            willChange: "transform",
+          }}
+        >
+          <PresentationOrb
+            colors={colors}
+            seed={seed}
+            agentState={agentState}
+            className="h-full w-full"
+          />
+        </div>
       </div>
       {/* Name label rides the same eased path but never scales. */}
       <div
         className="pointer-events-none fixed left-0 top-0 z-30"
         style={{
-          transform: `translate(${box.x + box.size / 2}px, ${box.y + box.size + 10}px)`,
+          transform: `translate(${box.cx}px, ${box.cy + visualSize / 2 + 10}px)`,
           opacity: mode === "talking" ? 1 : 0,
           transition: `opacity 300ms ease, transform 80ms ${ease}`,
         }}
