@@ -23,7 +23,7 @@ const DEFAULT_SEGMENT_MS = 8000;
 
 // Orb choreography sizes (px). Base canvas is rendered at STAGE_SIZE and scaled
 // down for the waiting row and the docked gutter marker.
-const STAGE_SIZE = 160; // talking, mid-left
+const STAGE_SIZE = 220; // talking, mid-left
 const WAIT_SIZE = 72; // greyed, bottom row
 const DOCK_SIZE = 36; // docked, section gutter
 
@@ -428,6 +428,8 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
+type OrbBox = { x: number; y: number; size: number };
+
 function TravelingOrb({
   agent,
   colors,
@@ -456,20 +458,11 @@ function TravelingOrb({
   const [box, setBox] = useState({ x: 0, y: 0, size: WAIT_SIZE });
   const boxRef = useRef(box);
   boxRef.current = box;
-  const targetRef = useRef(box);
 
-  const moveTo = useCallback((next: { x: number; y: number; size: number }) => {
+  const moveTo = useCallback((next: OrbBox) => {
     boxRef.current = next;
     setBox(next);
   }, []);
-
-  const setTarget = useCallback(
-    (next: { x: number; y: number; size: number }) => {
-      targetRef.current = next;
-      if (!animate) moveTo(next);
-    },
-    [animate, moveTo],
-  );
 
   const targetFromRect = useCallback(
     (rect: DOMRect, size = rect.width) => ({
@@ -499,30 +492,35 @@ function TravelingOrb({
     };
   }, [activeSection]);
 
-  // Waiting and talking targets are viewport-fixed center anchors, so measure
-  // once per signal change and let the shared frame loop carry the orb there.
-  useLayoutEffect(() => {
-    if (mode === "docking" || mode === "hidden") return;
-    if (mode === "talking") {
-      setTarget(talkingTarget());
-      return;
-    }
+  const currentTarget = useCallback((): OrbBox | null => {
+    if (mode === "docking" || mode === "hidden") return null;
+    if (mode === "talking") return talkingTarget();
     const r = waitingSlots.current?.get(agent.id)?.getBoundingClientRect();
-    if (r && r.width > 0) setTarget(targetFromRect(r, WAIT_SIZE));
-    // Recompute whenever the resolved target changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signal]);
+    return r && r.width > 0 ? targetFromRect(r, WAIT_SIZE) : null;
+  }, [agent.id, mode, talkingTarget, targetFromRect, waitingSlots]);
+
+  // Before the choreography is armed, snap each orb into its initial centered
+  // anchor so the later animated handoff starts from the right measured box.
+  useLayoutEffect(() => {
+    if (animate) return;
+    const target = currentTarget();
+    if (target) moveTo(target);
+  }, [animate, currentTarget, moveTo, signal]);
 
   useEffect(() => {
     if (!animate || mode === "docking" || mode === "hidden") return;
     let raf = 0;
     const step = () => {
+      const target = currentTarget();
+      if (!target) {
+        raf = requestAnimationFrame(step);
+        return;
+      }
       const cur = boxRef.current;
-      const target = targetRef.current;
       const next = {
-        x: lerp(cur.x, target.x, 0.18),
-        y: lerp(cur.y, target.y, 0.18),
-        size: lerp(cur.size, target.size, 0.18),
+        x: lerp(cur.x, target.x, 0.2),
+        y: lerp(cur.y, target.y, 0.2),
+        size: lerp(cur.size, target.size, mode === "talking" ? 0.28 : 0.2),
       };
       const settled =
         Math.abs(next.x - target.x) < 0.5 &&
@@ -537,7 +535,7 @@ function TravelingOrb({
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [animate, mode, signal, moveTo]);
+  }, [animate, mode, signal, currentTarget, moveTo]);
 
   // Docking chases the LIVE gutter rect frame by frame. The page is usually
   // still auto-scrolling (and images can shift layout) while the orb is in
