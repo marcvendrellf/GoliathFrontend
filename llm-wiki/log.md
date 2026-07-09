@@ -74,3 +74,7 @@
 - Moved the pending-agent roster from a wide bottom row to a compact 44px
   left-side column. It now displays only agents still waiting to speak, keeping
   the centered transcript unobstructed on wide screens.
+
+- Restored the live transcript to its original in-flow report section after the
+  viewport-centered version produced duplicate, overlapping text. The 900ms
+  speaker handoff pause and compact waiting-agent column remain in place.
