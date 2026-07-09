@@ -15,3 +15,15 @@
 - Created `dev` as the active integration branch.
 - Documented one-branch-per-issue workflow.
 - Updated scope for 2.5-hour timebox and removed the clarifying-question flow.
+
+- Scaffolded the app in `web/`: Next.js 15 + TypeScript + Tailwind v4 +
+  shadcn, pnpm. `pnpm build` and `tsc --noEmit` pass.
+- Decided simstudioai/sim is a component/pattern source only; its stack (Bun,
+  Postgres, Better Auth) is not adopted. Documented in `ui-foundation.md`.
+- Vendored AI Elements Persona orb and added shared `AgentOrb` wrapper.
+- Locked the backend contract in `web/src/lib/contract.ts` (mirrored in
+  `backend-contract.md`), added `CreateRunRequest` and `ReportSummary`, and
+  wrote full mock demo data with an 18s replayable run timeline.
+- Created route stubs with owner annotations: `/` and `/run/[runId]` (Felipe,
+  issue #1), `/reports` and `/reports/[runId]` (Marc, issues #2-#3).
+- Added issue drafts 04-06 and 08 and filed them on GitHub (#5-#8).

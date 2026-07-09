@@ -26,15 +26,15 @@
 
 ## Frontend implementation
 
-- Which current frontend repo should be used after the product pivot?
-- Should the existing pixel scaffold be discarded or repurposed?
-- What visual style should replace pixel art: command center, VC memo, graph,
-  or orb-based presentation?
-- Clarify what "LLM will be in the frontend" means operationally: browser-side
-  model calls, frontend-owned prompt orchestration, or just frontend-owned LLM
-  UX/chat state.
+Status: mostly closed on 2026-07-09.
+
+- Frontend lives in this repo under `web/` (fresh Next.js scaffold). The old
+  pixel scaffold in `Cala-Hackathon-Frontend-Dev` is abandoned.
+- Visual style: orb-based (AI Elements Persona) on a clean shadcn UI, with
+  simstudioai/sim as a component/pattern source. See `ui-foundation.md`.
+- Still open: what "LLM will be in the frontend" means operationally.
 
 ## GitHub issues
 
-- Which GitHub repo(s) should receive the issues?
-- Should issues be assigned to named team members or only owner-labeled?
+Status: closed. Issues live in `marcvendrellf/GoliathFrontend` (#1-#8),
+owner-labeled in the body (Felipe / Marc / all).
