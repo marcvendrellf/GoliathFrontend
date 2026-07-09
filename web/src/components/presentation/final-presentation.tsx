@@ -19,9 +19,6 @@ import { WordReveal } from "./word-reveal";
 
 const DEFAULT_SEGMENT_MS = 8000;
 
-/** Sim brand accent. Used sparingly for active markers, progress, primary CTA. */
-const ACCENT = "#33c482";
-
 type Phase = "idle" | "playing" | "finished";
 
 export function FinalPresentation({ report }: { report: FinalReport }) {
@@ -317,7 +314,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
                 ref={isActive ? activeSectionRef : undefined}
                 className={cn(
                   "flex flex-col gap-4 border-l-2 py-8 pl-5 transition-colors first:pt-0",
-                  isActive ? "border-l-[#33c482]" : "border-l-transparent",
+                  isActive ? "border-l-[#1d1d1d]" : "border-l-transparent",
                 )}
               >
                 {agent && (
@@ -422,7 +419,7 @@ function PlaybackDock({
             onClick={onToggle}
             disabled={!playing}
             aria-label={paused ? "Resume" : "Pause"}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-[#33c482] text-white transition-colors hover:bg-[#2dac72] disabled:pointer-events-none disabled:opacity-50"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-[#1d1d1d] text-white transition-colors hover:bg-[#333333] disabled:pointer-events-none disabled:opacity-50"
           >
             {paused || !playing ? (
               <Play className="size-4" />
@@ -464,8 +461,8 @@ function PlaybackDock({
             className="shrink-0 text-[11px] text-muted-foreground"
           />
           <ScrubBarTrack className="bg-[#ededed]">
-            <ScrubBarProgress className="inset-0 h-full w-full [&_[data-slot=progress-indicator]]:bg-[#33c482] [&_[data-slot=progress-track]]:h-full [&_[data-slot=progress-track]]:bg-transparent" />
-            <ScrubBarThumb className="bg-[#33c482]" />
+            <ScrubBarProgress className="inset-0 h-full w-full [&_[data-slot=progress-indicator]]:bg-[#1d1d1d] [&_[data-slot=progress-track]]:h-full [&_[data-slot=progress-track]]:bg-transparent" />
+            <ScrubBarThumb className="bg-[#1d1d1d]" />
           </ScrubBarTrack>
           <ScrubBarTimeLabel
             time={durationSec}
@@ -512,7 +509,7 @@ function StageOrb({
       <div
         className={cn(
           "rounded-full transition-shadow duration-500",
-          active && "ring-2 ring-[#33c482]/40 ring-offset-2 ring-offset-white",
+          active && "ring-2 ring-[#1d1d1d]/25 ring-offset-2 ring-offset-white",
         )}
       >
         <AgentOrb agent={agent} index={orbIndex} size="sm" />
@@ -546,7 +543,7 @@ function IdleView({
       <button
         type="button"
         onClick={onStart}
-        className="inline-flex h-10 items-center gap-2 rounded-md bg-[#33c482] px-6 text-sm font-medium text-white transition-colors hover:bg-[#2dac72]"
+        className="inline-flex h-10 items-center gap-2 rounded-md bg-[#1d1d1d] px-6 text-sm font-medium text-white transition-colors hover:bg-[#333333]"
       >
         <Play className="size-4" />
         Start briefing

@@ -81,7 +81,7 @@ export function Finale({
         <button
           type="button"
           onClick={onReplay}
-          className="inline-flex h-10 items-center gap-2 rounded-md bg-[#33c482] px-5 text-sm font-medium text-white transition-colors hover:bg-[#2dac72]"
+          className="inline-flex h-10 items-center gap-2 rounded-md bg-[#1d1d1d] px-5 text-sm font-medium text-white transition-colors hover:bg-[#333333]"
         >
           <RotateCcw className="size-4" />
           Replay briefing
