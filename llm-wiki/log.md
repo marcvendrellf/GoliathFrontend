@@ -70,3 +70,7 @@
   The in-progress, word-timed transcript now has a dedicated viewport-centered
   stage; completed sections are appended to the report history only after their
   speaker finishes.
+
+- Moved the pending-agent roster from a wide bottom row to a compact 44px
+  left-side column. It now displays only agents still waiting to speak, keeping
+  the centered transcript unobstructed on wide screens.

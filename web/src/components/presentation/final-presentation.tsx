@@ -24,7 +24,7 @@ const SPEAKER_PAUSE_MS = 900;
 
 // Each canvas is rendered at its final dimensions. Never CSS-scale a Three.js
 // canvas: a transform can race its ResizeObserver and warp the shader frame.
-const WAIT_SIZE = 72;
+const WAIT_SIZE = 44;
 const DOCK_SIZE = 36;
 
 type Phase = "playing" | "pausing" | "finished";
@@ -194,6 +194,9 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
     phase === "finished" ? segments.length : index,
   );
   const activeAgent = agents.find((agent) => agent.id === activeAgentId);
+  const waitingAgents = agents.filter(
+    (agent) => (firstSpeakAt.get(agent.id) ?? Infinity) > index,
+  );
 
   return (
     <div className="min-h-screen w-full bg-white text-foreground">
@@ -229,17 +232,16 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
         )}
       </aside>
 
-      {/* A quiet, fixed team row. These are independently rendered 72px
-          canvases, not scaled-down versions of the speaker canvas. */}
-      <div className="fixed bottom-14 left-16 z-20 hidden items-start gap-8 lg:flex">
-        {agents.map((agent) => {
+      {/* Waiting agents stay in a narrow left column, away from the centered
+          transcript. Each uses its own small canvas, never a scaled speaker. */}
+      <div className="fixed bottom-8 left-8 z-20 hidden w-24 flex-col items-center gap-3 lg:flex">
+        {waitingAgents.map((agent) => {
           const style = agentStyle.get(agent.id)!;
-          const waiting = (firstSpeakAt.get(agent.id) ?? Infinity) > index;
           return (
-            <div key={agent.id} className="flex w-32 flex-col items-center gap-2">
+            <div key={agent.id} className="flex w-full flex-col items-center gap-1">
               <div
-                className="transition-opacity duration-300"
-                style={{ width: WAIT_SIZE, height: WAIT_SIZE, opacity: waiting ? 0.6 : 0.18 }}
+                className="opacity-55 transition-opacity duration-300"
+                style={{ width: WAIT_SIZE, height: WAIT_SIZE }}
               >
                 <PresentationOrb
                   colors={style.colors}
@@ -248,7 +250,7 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
                   className="h-full w-full"
                 />
               </div>
-              <span className="w-full truncate text-center text-[11px] font-medium text-muted-foreground">
+              <span className="w-full text-center text-[9px] leading-tight text-muted-foreground">
                 {agent.name}
               </span>
             </div>
