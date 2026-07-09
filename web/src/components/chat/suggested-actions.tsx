@@ -39,7 +39,6 @@ export function SuggestedActions({
       <div className="mb-4 flex items-center justify-between">
         <button type="button" className="flex items-center gap-2 text-[var(--text-muted)] text-small">
           Suggested actions
-          <span className="text-[var(--text-icon)]">⌄</span>
         </button>
         <button type="button" className="flex items-center gap-2 text-[var(--text-muted)] text-small">
           Shuffle
