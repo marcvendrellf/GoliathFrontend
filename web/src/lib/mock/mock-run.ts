@@ -134,7 +134,7 @@ const EVENT_TIMELINE: { atMs: number; event: RunEvent }[] = [
       type: "agent.finding",
       agentId: "agent-funding",
       title: "Raise window detected",
-      text: "Neurodesk's seed was 14 months ago with 3x ARR growth since — classic pre-Series-A profile.",
+      text: "Neurodesk's seed was 14 months ago with 3x ARR growth since, a classic pre-Series-A profile.",
     },
   },
   {
@@ -261,7 +261,7 @@ export const MOCK_OPPORTUNITIES: Opportunity[] = [
 export const MOCK_FINAL_REPORT: FinalReport = {
   id: "report-mock-1",
   runId: "run-mock-1",
-  title: "AI Investment Opportunities — Barcelona",
+  title: "AI Investment Opportunities in Barcelona",
   executiveSummary:
     "Barcelona's AI scene is concentrating around health AI and applied LLM tooling. Neurodesk is the standout: a clear pre-Series-A profile with real hospital deployments. Parlem AI is one contract away from hot. Voltaflow is cooling under competitive pressure.",
   createdAt: T0,
@@ -293,7 +293,7 @@ export const MOCK_FINAL_REPORT: FinalReport = {
       title: "Timing the rounds",
       subtitle: "When the windows open",
       script:
-        "Neurodesk raised its seed fourteen months ago and has tripled revenue since — that is a classic pre-Series-A profile. Expect a round within six to nine months. Parlem AI's seed likely opens once the bank pilot converts.",
+        "Neurodesk raised its seed fourteen months ago and has tripled revenue since, and that is a classic pre-Series-A profile. Expect a round within six to nine months. Parlem AI's seed likely opens once the bank pilot converts.",
       evidenceIds: ["evd-1"],
       durationMs: 13000,
     },

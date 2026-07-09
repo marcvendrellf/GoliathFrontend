@@ -271,27 +271,24 @@ export function FinalPresentation({ report }: { report: FinalReport }) {
 
   return (
     <div className="min-h-screen w-full bg-white text-foreground">
-      {/* Sticky header band: the orb stage. */}
-      <header className="sticky top-0 z-10 border-b border-[#dedede] bg-white/85 backdrop-blur">
-        <div className="mx-auto w-full max-w-3xl px-6 py-4">
-          <div className="flex min-h-[92px] items-end justify-center gap-8">
-            {enteredAgents.map((agent) => {
-              const orbIndex = agents.indexOf(agent);
-              return (
-                <StageOrb
-                  key={agent.id}
-                  agent={{
-                    ...agent,
-                    status: agent.id === activeAgentId ? "speaking" : "done",
-                  }}
-                  orbIndex={orbIndex}
-                  active={agent.id === activeAgentId}
-                />
-              );
-            })}
-          </div>
-        </div>
-      </header>
+      {/* Orb stage: a fixed rail on the left side of the screen. Orbs stack
+          top to bottom in order of first appearance. */}
+      <aside className="fixed left-8 top-24 z-10 hidden flex-col items-center gap-8 lg:flex">
+        {enteredAgents.map((agent) => {
+          const orbIndex = agents.indexOf(agent);
+          return (
+            <StageOrb
+              key={agent.id}
+              agent={{
+                ...agent,
+                status: agent.id === activeAgentId ? "speaking" : "done",
+              }}
+              orbIndex={orbIndex}
+              active={agent.id === activeAgentId}
+            />
+          );
+        })}
+      </aside>
 
       {/* The report: sections accumulate top-to-bottom as agents speak. */}
       <main className="mx-auto w-full max-w-3xl px-6 pb-48 pt-8">
