@@ -2,6 +2,18 @@
 
 Frontend owns the user-facing Goliath experience.
 
+## Quickstart
+
+```bash
+cd web
+pnpm install
+pnpm dev     # http://localhost:3000 — runs fully on mock data, no backend needed
+```
+
+See `web/README.md` for structure, ownership, and how to pull sim/shadcn
+components. The backend contract is `web/src/lib/contract.ts`
+(mirrored in `llm-wiki/backend-contract.md`).
+
 ## Team Ownership
 
 - Felipe: orchestrator chat, agent representation, subagent spawn animation,

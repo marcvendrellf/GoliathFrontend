@@ -11,30 +11,34 @@
 
 ## Backend implementation
 
-- What stack are Axel and Josep using?
-- Will backend support streaming events or simple polling?
-- Will reports be persisted or in memory?
+- Resolved 2026-07-09: Josep's backend is FastAPI/Pydantic, with an in-memory
+  run/report store, polling endpoints, and an SSE endpoint. Demo mode now uses
+  the repository-backed `run_dump/final` briefing rather than generating new
+  mock research per prompt.
+- Resolved 2026-07-09: local integration now stages mock events, returns
+  speaker/evidence/timing metadata, resolves browser-playable audio URLs, and
+  has alias-correct SSE. See the [backend audit](sources/backend-local-integration-audit-2026-07-09.md).
 - What Cala API fields are available for startup/funding-round data?
 - What news/search source will backend use?
 
 ## ElevenLabs
 
 - Do we have voice IDs?
-- Will backend generate audio files before the final presentation starts?
-- Where are audio files stored or served from?
-- Do we need per-word/per-sentence subtitle timing, or segment-level subtitles?
+- Backend audio URLs now use a configurable public base URL, and the frontend
+  also normalizes a relative URL defensively. Report segments now carry
+  estimated timings in mock mode and exact provider timings when TTS is used.
 
 ## Frontend implementation
 
-- Which current frontend repo should be used after the product pivot?
-- Should the existing pixel scaffold be discarded or repurposed?
-- What visual style should replace pixel art: command center, VC memo, graph,
-  or orb-based presentation?
-- Clarify what "LLM will be in the frontend" means operationally: browser-side
-  model calls, frontend-owned prompt orchestration, or just frontend-owned LLM
-  UX/chat state.
+Status: mostly closed on 2026-07-09.
+
+- Frontend lives in this repo under `web/` (fresh Next.js scaffold). The old
+  pixel scaffold in `Cala-Hackathon-Frontend-Dev` is abandoned.
+- Visual style: orb-based (AI Elements Persona) on a clean shadcn UI, with
+  simstudioai/sim as a component/pattern source. See `ui-foundation.md`.
+- Still open: what "LLM will be in the frontend" means operationally.
 
 ## GitHub issues
 
-- Which GitHub repo(s) should receive the issues?
-- Should issues be assigned to named team members or only owner-labeled?
+Status: closed. Issues live in `marcvendrellf/GoliathFrontend` (#1-#8),
+owner-labeled in the body (Felipe / Marc / all).

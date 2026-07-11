@@ -1,26 +1,59 @@
 # Backend Contract
 
-This is the proposed contract for Axel and Josep. It should be simplified if
-backend time is tight.
+Contract between the frontend (`web/`) and the backend repo (Axel and Josep).
+The canonical, always-up-to-date version is the TypeScript file
+`web/src/lib/contract.ts`; this page mirrors it. Change both together and tell
+the team. No silent drift.
+
+Mock data matching this contract lives in `web/src/lib/mock/mock-run.ts`, and
+`web/src/lib/api.ts` falls back to it automatically when
+`NEXT_PUBLIC_API_BASE_URL` is unset. Backend can validate against the mock.
 
 ## Endpoints
 
 Minimum:
 
 ```txt
-POST /api/runs
-GET /api/runs/:runId
-GET /api/reports
-GET /api/reports/:runId
+POST /api/runs                body: { query: string }   → Run
+GET  /api/runs/:runId         → Run
+GET  /api/reports             → ReportSummary[]
+GET  /api/reports/:runId      → FinalReport
 ```
 
-Optional streaming:
+Optional streaming (only if backend has time):
 
 ```txt
-GET /api/runs/:runId/events
+GET /api/runs/:runId/events   → SSE stream of RunEvent
 ```
 
-Polling `GET /api/runs/:runId` is acceptable if streaming is too slow to build.
+Frontend polls `GET /api/runs/:runId` every 1-2 seconds while the run is not
+`complete`/`error`. Backend must allow CORS from `http://localhost:3000`.
+
+## Local integration audit (2026-07-09)
+
+The backend now exists locally at sibling path `../GoliathBackend`, cloned from
+[`josep-audenis/goliath-backend`](https://github.com/josep-audenis/goliath-backend).
+Its default `USE_DEMO_FIXTURE=true` mode serves the committed `run_dump/final`
+briefing through the normal API, including six MP3 clips and exact word timings.
+This is intentionally fixed demo content; each request still gets a fresh run
+and report ID.
+
+To route the existing frontend to it, set
+`NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000` in `web/.env.local` and
+restart Next.js. The API's permissive development CORS allows the frontend call.
+
+The home action **Find Barcelona AI & deep-tech opportunities** is intentionally
+exempt: it replays the frontend's checked-in copy of the backend
+`run_dump/final` briefing, including the five opportunities, six MP3 clips,
+word timings, and report route, even when the backend URL is configured. The
+audio files are served from `web/public/demo-briefing/`, so this primary demo
+remains fully playable with no backend server. Other prompts use the backend
+normally.
+
+The integrated browser flow verifies report speaker/evidence metadata,
+timing-aware subtitles, backend-origin-aware audio, and final-report navigation.
+Set `USE_DEMO_FIXTURE=false` only when switching back to the generated mock or
+live-research pipeline. See the [source audit](sources/backend-local-integration-audit-2026-07-09.md).
 
 ## Core Types
 
@@ -32,9 +65,7 @@ export type RunStatus =
   | "synthesizing"
   | "complete"
   | "error";
-```
 
-```ts
 export type Run = {
   id: string;
   status: RunStatus;
@@ -43,18 +74,22 @@ export type Run = {
   events: RunEvent[];
   opportunities: Opportunity[];
   finalReport?: FinalReport;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+};
+
+export type CreateRunRequest = {
+  query: string;
 };
 ```
 
 ```ts
 export type AgentPlan = {
   id: string;
-  name: string;
-  role: string;
-  purpose: string;
-  voiceId?: string;
+  name: string;      // display name, e.g. "Market Mapper"
+  role: string;      // short role label
+  purpose: string;   // one sentence: what this agent investigates
+  voiceId?: string;  // ElevenLabs voice id (backend concern, informative)
   status: "pending" | "researching" | "speaking" | "done" | "error";
 };
 ```
@@ -84,17 +119,15 @@ export type Opportunity = {
   sector?: string;
   stage?: string;
   summary: string;
-  prediction: string;
-  goliathScore: number;
+  prediction: string;   // concise + precise
+  goliathScore: number; // 0-100
   status: "hot" | "warming" | "neutral" | "cooling" | "not_hot";
-  confidence: number;
+  confidence: number;   // 0-1
   riskLevel: "low" | "medium" | "high";
   scoreReason: string;
   evidence: Evidence[];
 };
-```
 
-```ts
 export type Evidence = {
   id: string;
   source: "cala" | "news" | "web" | "manual";
@@ -112,37 +145,65 @@ export type FinalReport = {
   executiveSummary: string;
   segments: PresentationSegment[];
   opportunities: Opportunity[];
+  createdAt: string;
 };
-```
 
-```ts
+export type TranscriptWord = {
+  text: string;
+  startMs: number;
+  endMs: number;
+};
+
+export type PresentationSpeaker = Pick<
+  AgentPlan,
+  "name" | "role" | "purpose"
+>;
+
 export type PresentationSegment = {
   id: string;
-  agentId: string;
+  agentId: string;      // which AgentPlan speaks this segment
+  speaker?: PresentationSpeaker;
   title: string;
   subtitle: string;
-  script: string;
-  audioUrl?: string;
+  script: string;       // full spoken text used as subtitles
+  audioUrl?: string;    // ElevenLabs mp3 URL; absent → silent + subtitles
   imageUrl?: string;
   evidenceIds: string[];
-  durationMs?: number;
+  durationMs?: number;  // fallback timing when audio is missing
+  wordTimings?: TranscriptWord[];
+};
+
+export type ReportSummary = {
+  runId: string;
+  title: string;
+  query: string;
+  status: RunStatus;
+  createdAt: string;
+  opportunityCount: number;
+  topOpportunities: Pick<
+    Opportunity,
+    "id" | "startupName" | "goliathScore" | "status"
+  >[];
 };
 ```
 
 ## Backend Responsibilities
 
-- Produce subagent plan directly from the user query.
+- Produce the subagent plan directly from the user query (target: 4 agents).
 - Run subagents or mock them with credible structured output.
-- Produce events for frontend animation.
-- Produce final opportunities with evidence and predictions.
+- Emit events for frontend animation (`agent.spawned` per agent matters most).
+- Produce final opportunities with evidence and concise predictions.
 - Include `goliathScore`, `status`, `confidence`, `riskLevel`, and
   `scoreReason` for every opportunity.
-- Generate or provide ElevenLabs audio URLs for final report segments.
-- Avoid exposing ElevenLabs/Cala secrets to frontend.
+- Generate ElevenLabs audio per presentation segment and return public/
+  proxied `audioUrl`s (mp3). One clip per segment, not one big file.
+- Keep ElevenLabs/Cala secrets server-side.
+- Allow CORS from the frontend origin.
 
 ## Frontend Responsibilities
 
-- Animate based on `Run.status`, `AgentPlan.status`, and `RunEvent`.
-- Render final report from `FinalReport`.
-- Play `PresentationSegment.audioUrl` when available.
-- Use text/subtitles if audio is missing.
+- Animate from `Run.status`, `AgentPlan.status`, and `RunEvent`s.
+- Render the final report from `FinalReport`.
+- Play `PresentationSegment.audioUrl` when present; fall back to
+  subtitles + `durationMs` timing when absent.
+- Never call ElevenLabs or Cala directly.
